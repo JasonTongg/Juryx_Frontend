@@ -1,0 +1,46 @@
+:root {
+  --primary-color: #1da1f2;
+  --secondary-color: #14171a;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@font-face {
+  font-family: "Hashiba";
+  src: url("../public/assets/Hashiba.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+}
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* font-family: "Hashiba", sans-serif; */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+
+img {
+  pointer-events: none;
+}
+
+.MuiList-padding {
+  padding: 0 !important;
+}
