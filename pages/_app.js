@@ -9,24 +9,15 @@ import {
   darkTheme,
 } from "@rainbow-me/rainbowkit";
 import { WagmiProvider } from "wagmi";
-import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains";
+import { sepolia } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 
-const monad = {
-  id: 10143,
-  name: "Monad Testnet",
-  iconUrl:
-    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThzDdnUvl5j4wpYAQNodxL2IFT-VwGGXaH6srfa3LyXnVpn9nS4nrt-1AmbRUP9Vuvn6M&usqp=CAU",
-  iconBackground: "#fff",
-  nativeCurrency: { name: "Monad", symbol: "MON", decimals: 18 },
+const local = {
+  id: 31337,
+  name: "Local Network",
+  nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
   rpcUrls: {
-    default: { http: ["https://testnet-rpc.monad.xyz"] },
-  },
-  blockExplorers: {
-    default: {
-      name: "MonadExplorer",
-      url: "https://testnet.monadexplorer.com/",
-    },
+    default: { http: ["http://127.0.0.1:8545"] },
   },
   testnet: true,
 };
@@ -34,7 +25,7 @@ const monad = {
 const config = getDefaultConfig({
   appName: "My RainbowKit App",
   projectId: "0e50ad124798913a4af212355f956d06",
-  chains: [mainnet, polygon, optimism, arbitrum, base, monad],
+  chains: [sepolia],
   ssr: true,
 });
 
