@@ -4,9 +4,8 @@ import { getAddress } from "viem";
 
 const userPath = path.join(process.cwd(), "data", "user.json");
 const requestPath = path.join(process.cwd(), "data", "request.json");
-const sigPath = path.join(process.cwd(), "data", "signature.json"); // New path
+const sigPath = path.join(process.cwd(), "data", "signature.json");
 
-// Helper to safely read JSON files
 function readJsonFile(filePath) {
     if (!fs.existsSync(filePath)) return {};
     const content = fs.readFileSync(filePath, "utf-8");
@@ -26,8 +25,6 @@ export default function handler(req, res) {
 
     try {
         const userAddress = getAddress(address);
-
-        // 1. Get the user's data to find which accounts they sign for
         const userDataStore = readJsonFile(userPath);
         const userProfile = userDataStore[userAddress];
 
@@ -36,27 +33,32 @@ export default function handler(req, res) {
         }
 
         const accessibleAccounts = userProfile.ownerOf.map(acc => getAddress(acc));
-
-        // 2. Load requests and signatures
         const allRequestsStore = readJsonFile(requestPath);
-        const allSignaturesStore = readJsonFile(sigPath); // Read signature data
+        const allSignaturesStore = readJsonFile(sigPath);
         const filteredRequests = [];
 
         Object.keys(allRequestsStore).forEach((accountAddr) => {
             const formattedAccAddr = getAddress(accountAddr);
 
             if (accessibleAccounts.includes(formattedAccAddr)) {
-                // Get signatures specifically for this Smart Account
+                // Get the signature object for this specific account
+                // Format: { "0xSigner1": "0xsig...", "0xSigner2": "0xsig..." }
                 const accountSigs = allSignaturesStore[formattedAccAddr] || {};
+
+                // Create a detailed list of signers and their actual signatures
+                const signatureDetails = Object.entries(accountSigs).map(([signer, sig]) => ({
+                    signerAddress: signer,
+                    signature: sig
+                }));
+
                 const signedBy = Object.keys(accountSigs);
-                const currentSignatures = signedBy.length;
 
                 filteredRequests.push({
                     account: formattedAccAddr,
                     ...allRequestsStore[accountAddr],
-                    // Attach real-time signature data
-                    currentSignatures,
-                    approvedBy: signedBy
+                    currentSignatures: signedBy.length,
+                    approvedBy: signedBy, // Just the addresses
+                    signatures: signatureDetails // Addresses + Signature Data
                 });
             }
         });

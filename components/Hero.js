@@ -7,16 +7,22 @@ import {
   useWriteContract,
   useWaitForTransactionReceipt,
   useDeployContract,
+  useSignMessage
 } from "wagmi";
 import { useSelector } from "react-redux";
-import { parseEventLogs } from "viem";
+import { parseEventLogs, encodeAbiParameters, parseAbiParameters, encodeFunctionData } from "viem";
 import { IoMdCloseCircleOutline, IoMdAddCircleOutline } from "react-icons/io";
+import { encode } from "punycode";
+import { createPublicClient, http, toHex } from "viem";
+import { sepolia } from "viem/chains";
+import { parseUnits, parseEther, getAddress } from "viem";
 
 const ENTRY_POINT_ADDRESS = process.env.NEXT_PUBLIC_ENTRYPOINT_ADDRESS;
 
 export default function Hero() {
   const { address, isConnected } = useAccount();
   const { abi, factoryByteCode } = useSelector((state) => state.data);
+  const { signMessageAsync } = useSignMessage();
 
   // State for dynamic signers and threshold
   const [signerAddresses, setSignerAddresses] = useState([""]);
@@ -33,6 +39,10 @@ export default function Hero() {
   const [isExecuting, setIsExecuting] = useState(false);
 
   const { writeContractAsync: executeTx } = useWriteContract();
+  const publicClient = createPublicClient({
+    chain: sepolia,
+    transport: http(),
+  });
 
   // Set the connected wallet as the first signer by default when it connects
   useEffect(() => {
@@ -185,6 +195,14 @@ export default function Hero() {
     }
   }, [factoryAddress, newAccountAddress, address]);
 
+  const loadRequests = async (userAddress) => {
+    const response = await fetch(`/api/getUserRequests?address=${userAddress}`);
+    const data = await response.json();
+    if (data.success) {
+      setMyRequests(data.requests);
+    }
+  };
+
   useEffect(() => {
     const fetchUserData = async (userAddress) => {
       if (!userAddress) return;
@@ -201,18 +219,154 @@ export default function Hero() {
       }
     };
 
-    const loadRequests = async (userAddress) => {
-      const response = await fetch(`/api/getUserRequests?address=${address}`);
-      const data = await response.json();
-      if (data.success) {
-        setMyRequests(data.requests);
-      }
-    };
-
     fetchUserData(address);
     loadRequests(address);
   }, [address]);
 
+  const handleSign = async (accountAddress, target, value, data, currentSignatures, threshold) => {
+    try {
+      const message = `Authorize Transaction:
+Account: ${accountAddress}
+Target: ${target}
+Value: ${value}
+Data: ${data}`;
+
+      const signature = await signMessageAsync({ message });
+
+      console.log("Signature received:", signature);
+
+      await fetch("/api/addSignature", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          account: accountAddress,
+          owner: address,
+          signature: signature
+        }),
+      });
+
+      if (currentSignatures + 1 >= threshold) {
+        await updateStatus(accountAddress, "Ready")
+      }
+      loadRequests(address);
+    } catch (err) {
+      console.error("Signing failed:", err);
+    }
+  };
+
+  const updateStatus = async (accountAddr, status) => {
+    try {
+      const response = await fetch("/api/updateRequestStatus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountAddress: accountAddr,
+          newStatus: status, // e.g., "executed"
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        alert(`Status updated to ${status}`);
+      }
+    } catch (error) {
+      console.error("Failed to update status", error);
+    }
+  };
+
+  const getHexNonce = async (senderAddress) => {
+    try {
+      const nonce = await publicClient.readContract({
+        address: process.env.NEXT_PUBLIC_ENTRYPOINT_ADDRESS,
+        abi: abi.EntryPointAbi,
+        functionName: "getNonce",
+        args: ["0x1201d0c0ceaec08076a8a685f8fca1e7688bf7bf", BigInt(0)],
+      });
+      return toHex(nonce);
+    } catch (error) {
+      console.error("Error fetching nonce:", error);
+    }
+  };
+
+  const handleExecute = async (req) => {
+    setIsLoading(true);
+    try {
+
+      const hexNonce = (await getHexNonce(req.account)).toString(16);
+
+      const userOp = {
+        sender: "0x1201d0c0ceaec08076a8a685f8fca1e7688bf7bf",
+        nonce: hexNonce,
+        initCode: "0x",
+        callData: encodeFunctionData({
+          abi: abi.AccountAbi,
+          functionName: "execute",
+          args: [
+            req.targetAddress,
+            req.value,
+            req.data
+          ],
+        }),
+        paymasterAndData: "0x0A61DEfe814e78eB8eB95aFb4d18Ab24Ae85E443",
+        signature: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa55555555555555555555555555555555555555555555555555555555555555551b",
+      };
+
+      userOp.verificationGasLimit = toHex(1500000n);
+      userOp.preVerificationGas = toHex(500000n);
+      userOp.callGasLimit = toHex(200000n);
+      userOp.maxFeePerGas = "0x0bebc200";
+      userOp.maxPriorityFeePerGas = "0x0bebc200";
+
+      const sortedSignatures = [...req.signatures].sort((a, b) =>
+        getAddress(a.signerAddress).toLowerCase().localeCompare(getAddress(b.signerAddress).toLowerCase())
+      );
+
+      const sigsArray = sortedSignatures.map(s => s.signature);
+
+      const encodedSignatures = encodeAbiParameters(
+        parseAbiParameters('bytes[]'),
+        [sigsArray]
+      );
+
+      userOp.signature = encodedSignatures;
+
+      console.log(userOp);
+
+      handleFinalExecution(userOp);
+
+      // await updateStatus(req.account, "Executed");
+      // loadRequests(address);
+
+    } catch (err) {
+      console.error("Execution failed:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const { writeContractAsync: writeContractExecute } = useWriteContract();
+
+  const handleFinalExecution = async (userOp) => {
+    setIsLoading(true);
+    try {
+      const txHash = await writeContractExecute({
+        address: process.env.NEXT_PUBLIC_ENTRYPOINT_ADDRESS,
+        abi: abi.EntryPointAbi,
+        functionName: "handleOps",
+        args: [
+          [userOp],
+          address
+        ],
+      });
+
+      console.log("Transaction Hash:", txHash);
+    } catch (err) {
+      console.error("handleOps failed:", err);
+      alert("Blockchain execution failed. Check console for details.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
   return (
@@ -344,12 +498,12 @@ export default function Hero() {
               Pending Transactions
             </h3>
             <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {myRequests.filter(item => item.status === "pending").length} Action Required
+              {myRequests.filter(item => item.status.toLowerCase() === "pending").length} Action Required
             </span>
           </div>
 
           <div className="flex flex-col gap-3">
-            {myRequests.filter(item => item.status === "pending").map((req, i) => (
+            {myRequests.filter(item => item.status.toLowerCase() === "pending").map((req, i) => (
               <div
                 key={i}
                 className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
@@ -382,13 +536,17 @@ export default function Hero() {
                   </div>
 
                   <button
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
                     onClick={() => {
-                      // You can add your approval logic here later
-                      console.log("Approving request for", req.account);
+                      handleSign(req.account, req.targetAddress, req.value, req.data, req.currentSignatures, req.threshold);
                     }}
+                    disabled={req.signatures.some(
+                      (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
+                    )}
                   >
-                    Sign & Approve
+                    {req.signatures.some(
+                      (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
+                    ) ? "Your Already Sign" : "Sign & Approve"}
                   </button>
                 </div>
               </div>
@@ -403,12 +561,12 @@ export default function Hero() {
               Ready To Execute
             </h3>
             <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {myRequests.filter(item => item.status === "ready").length} Action Required
+              {myRequests.filter(item => item.status.toLowerCase() === "ready").length} Action Required
             </span>
           </div>
 
           <div className="flex flex-col gap-3">
-            {myRequests.filter(item => item.status === "ready").map((req, i) => (
+            {myRequests.filter(item => item.status.toLowerCase() === "ready").map((req, i) => (
               <div
                 key={i}
                 className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
@@ -443,11 +601,10 @@ export default function Hero() {
                   <button
                     className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
                     onClick={() => {
-                      // You can add your approval logic here later
-                      console.log("Approving request for", req.account);
+                      handleExecute(req)
                     }}
                   >
-                    Sign & Approve
+                    Execute
                   </button>
                 </div>
               </div>
@@ -462,12 +619,12 @@ export default function Hero() {
               Executed Transactions
             </h3>
             <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {myRequests.filter(item => item.status === "executed").length} Action Required
+              {myRequests.filter(item => item.status.toLowerCase() === "executed").length} Action Required
             </span>
           </div>
 
           <div className="flex flex-col gap-3">
-            {myRequests.filter(item => item.status === "executed").map((req, i) => (
+            {myRequests.filter(item => item.status.toLowerCase() === "executed").map((req, i) => (
               <div
                 key={i}
                 className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
@@ -498,16 +655,6 @@ export default function Hero() {
                       Required: {req.currentSignatures}/{req.threshold} Signatures
                     </p>
                   </div>
-
-                  <button
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
-                    onClick={() => {
-                      // You can add your approval logic here later
-                      console.log("Approving request for", req.account);
-                    }}
-                  >
-                    Sign & Approve
-                  </button>
                 </div>
               </div>
             ))}
