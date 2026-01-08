@@ -54,6 +54,7 @@ export default function handler(req, res) {
 
         if (!data[ownerAddr].ownerOf.includes(accountAddr)) {
             data[ownerAddr].ownerOf.push(accountAddr);
+            data[ownerAddr].deployedAccounts = accountAddr;
         }
 
         writeData(data);

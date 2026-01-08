@@ -41,6 +41,7 @@ export default function handler(req, res) {
             data[ownerAddr] = {
                 factory: "",
                 ownerOf: [],
+                deployedAccounts: ""
             };
         }
 
