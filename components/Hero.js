@@ -10,7 +10,7 @@ import {
   useSignMessage
 } from "wagmi";
 import { useSelector } from "react-redux";
-import { parseEventLogs, encodeAbiParameters, parseAbiParameters, encodeFunctionData } from "viem";
+import { parseEventLogs, encodeAbiParameters, parseAbiParameters, encodeFunctionData, keccak256 } from "viem";
 import { IoMdCloseCircleOutline, IoMdAddCircleOutline } from "react-icons/io";
 import { encode } from "punycode";
 import { createPublicClient, http, toHex } from "viem";
@@ -34,7 +34,7 @@ export default function Hero() {
 
   // --- New State for Execution Section ---
   const [target, setTarget] = useState("");
-  const [value, setValue] = useState("0");
+  const [value, setValue] = useState("");
   const [callData, setCallData] = useState("0x");
   const [isExecuting, setIsExecuting] = useState(false);
 
@@ -58,6 +58,16 @@ export default function Hero() {
   const { data: deployReceipt, isSuccess: factoryDeployed } = useWaitForTransactionReceipt({
     hash: deployHash,
   });
+
+  const [executedHistory, setExecutedHistory] = useState({});
+
+  const loadHistory = async (userAddress) => {
+    const response = await fetch(`/api/getUserExecutedRequests?address=${userAddress}`);
+    const data = await response.json();
+    if (data.success) {
+      setExecutedHistory(data.history);
+    }
+  };
 
   const factoryAddress = deployReceipt?.contractAddress;
 
@@ -87,7 +97,11 @@ export default function Hero() {
   }, [factoryDeployed, factoryAddress, address, createAccount, abi, signerAddresses, threshold]);
 
   useEffect(() => {
-    if (createReceipt) setIsLoading(false);
+    if (createReceipt) {
+      setIsLoading(false);
+      setUserApi();
+      console.log("Account successfully deployed and recorded!");
+    }
   }, [createReceipt]);
 
   /* ---------------- Handlers ---------------- */
@@ -123,9 +137,11 @@ export default function Hero() {
   //   }
   // };
 
-  const handleRequest = async () => {
+  const handleRequest = async (accountAddress) => {
+    fetchUserData(address);
+
     const payload = {
-      accountAddress: deployedAccount,
+      accountAddress: accountAddress,
       target: target,
       value: value,
       data: callData,
@@ -139,6 +155,9 @@ export default function Hero() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
+
+      loadRequests(address);
+      loadHistory(address);
     } catch (error) {
       console.error("Error submitting request:", error);
     }
@@ -173,7 +192,7 @@ export default function Hero() {
     }
   }, [createReceipt, abi]);
 
-  useEffect(() => {
+  async function setUserApi() {
     if (factoryAddress && newAccountAddress) {
       const setUser = async () => {
         await fetch("/api/user", {
@@ -192,8 +211,9 @@ export default function Hero() {
       }
       setUser();
       addOwner();
+      fetchUserData(address);
     }
-  }, [factoryAddress, newAccountAddress, address]);
+  }
 
   const loadRequests = async (userAddress) => {
     const response = await fetch(`/api/getUserRequests?address=${userAddress}`);
@@ -203,35 +223,35 @@ export default function Hero() {
     }
   };
 
-  useEffect(() => {
-    const fetchUserData = async (userAddress) => {
-      if (!userAddress) return;
-      try {
-        const response = await fetch(`/api/getUserData?address=${userAddress}`);
-        const result = await response.json();
+  const fetchUserData = async (userAddress) => {
+    if (!userAddress) return;
+    try {
+      const response = await fetch(`/api/getUserData?address=${userAddress}`);
+      const result = await response.json();
 
-        if (result.success) {
-          setDeployedAccount(result.deployedAccounts);
-          setSignerFor(result.ownerOf);
-        }
-      } catch (error) {
-        console.error("Fetch error:", error);
+      if (result.success) {
+        setDeployedAccount(result.deployedAccounts);
+        setSignerFor(result.ownerOf);
       }
-    };
+    } catch (error) {
+      console.error("Fetch error:", error);
+    }
+  };
 
+  useEffect(() => {
     fetchUserData(address);
     loadRequests(address);
+    loadHistory(address);
   }, [address]);
 
   const handleSign = async (accountAddress, target, value, data, currentSignatures, threshold) => {
     try {
-      const message = `Authorize Transaction:
-Account: ${accountAddress}
-Target: ${target}
-Value: ${value}
-Data: ${data}`;
+      const plainString = "Hello Multisig";
+      const messageHash = keccak256(toHex(plainString));
 
-      const signature = await signMessageAsync({ message });
+      const signature = await signMessageAsync({
+        message: { raw: messageHash }
+      });
 
       console.log("Signature received:", signature);
 
@@ -246,9 +266,10 @@ Data: ${data}`;
       });
 
       if (currentSignatures + 1 >= threshold) {
-        await updateStatus(accountAddress, "Ready")
+        await updateStatus(accountAddress, "Ready");
       }
       loadRequests(address);
+      loadHistory(address);
     } catch (err) {
       console.error("Signing failed:", err);
     }
@@ -280,7 +301,7 @@ Data: ${data}`;
         address: process.env.NEXT_PUBLIC_ENTRYPOINT_ADDRESS,
         abi: abi.EntryPointAbi,
         functionName: "getNonce",
-        args: ["0x1201d0c0ceaec08076a8a685f8fca1e7688bf7bf", BigInt(0)],
+        args: [senderAddress, BigInt(0)],
       });
       return toHex(nonce);
     } catch (error) {
@@ -295,7 +316,7 @@ Data: ${data}`;
       const hexNonce = (await getHexNonce(req.account)).toString(16);
 
       const userOp = {
-        sender: "0x1201d0c0ceaec08076a8a685f8fca1e7688bf7bf",
+        sender: getAddress(req.account),
         nonce: hexNonce,
         initCode: "0x",
         callData: encodeFunctionData({
@@ -332,10 +353,7 @@ Data: ${data}`;
 
       console.log(userOp);
 
-      handleFinalExecution(userOp);
-
-      // await updateStatus(req.account, "Executed");
-      // loadRequests(address);
+      handleFinalExecution(userOp, req);
 
     } catch (err) {
       console.error("Execution failed:", err);
@@ -346,7 +364,7 @@ Data: ${data}`;
 
   const { writeContractAsync: writeContractExecute } = useWriteContract();
 
-  const handleFinalExecution = async (userOp) => {
+  const handleFinalExecution = async (userOp, req) => {
     setIsLoading(true);
     try {
       const txHash = await writeContractExecute({
@@ -360,6 +378,27 @@ Data: ${data}`;
       });
 
       console.log("Transaction Hash:", txHash);
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash
+      });
+
+      console.log("Transaction confirmed in block:", receipt.blockNumber);
+
+      console.log("Receipt:", receipt);
+
+      if (receipt.status === "success") {
+        await updateStatus(req.account, "Executed");
+
+        await Promise.all([
+          loadRequests(address),
+          loadHistory(address)
+        ]);
+
+        alert("Transaction Executed Successfully!");
+      } else {
+        throw new Error("Transaction reverted on-chain");
+      }
     } catch (err) {
       console.error("handleOps failed:", err);
       alert("Blockchain execution failed. Check console for details.");
@@ -368,12 +407,11 @@ Data: ${data}`;
     }
   };
 
-
   return (
     <div className="bg-slate-50 min-h-screen flex items-center justify-center p-4 flex-col gap-4">
 
       {/* Creation Section */}
-      {!deployedAccount && (
+      {!(deployedAccount || newAccountAddress) && (
         <div className="flex flex-col gap-4 bg-white p-6 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
           <h2 className="text-xl font-bold text-gray-800">Create Multi-Sig Account</h2>
 
@@ -451,7 +489,7 @@ Data: ${data}`;
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-600 uppercase">Value (Wei)</label>
               <input
-                type="number"
+                type="text"
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
@@ -471,7 +509,7 @@ Data: ${data}`;
 
             <button
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors shadow-md disabled:opacity-50"
-              onClick={handleRequest}
+              onClick={() => handleRequest(deployedAccount || newAccountAddress)}
             >
               Request Transaction
             </button>
@@ -491,176 +529,163 @@ Data: ${data}`;
       )}
 
       {/* Pending Transactions Section */}
-      {myRequests.length > 0 && (
-        <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Pending Transactions
-            </h3>
-            <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {myRequests.filter(item => item.status.toLowerCase() === "pending").length} Action Required
-            </span>
-          </div>
 
-          <div className="flex flex-col gap-3">
-            {myRequests.filter(item => item.status.toLowerCase() === "pending").map((req, i) => (
+      <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+            Pending Transactions
+          </h3>
+          <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            {myRequests.filter(item => item.status.toLowerCase() === "pending").length} Action Required
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {myRequests.filter(item => item.status.toLowerCase() === "pending").map((req, i) => (
+            <div
+              key={i}
+              className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+            >
+              {/* Header: Smart Account Source */}
+              <div className="mb-2">
+                <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
+                <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
+              </div>
+
+              {/* Body: Transaction Details */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-white p-2 rounded border border-slate-100">
+                  <p className="text-[9px] text-gray-400 font-bold">Target</p>
+                  <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
+                </div>
+                <div className="bg-white p-2 rounded border border-slate-100">
+                  <p className="text-[9px] text-gray-400 font-bold">Value</p>
+                  <p className="text-[10px] font-mono">{req.value} Wei</p>
+                </div>
+              </div>
+
+              {/* Reason & Status */}
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
+                  <p className="text-[9px] text-blue-500 font-semibold mt-1">
+                    Required: {req.currentSignatures}/{req.threshold} Signatures
+                  </p>
+                </div>
+
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
+                  onClick={() => {
+                    handleSign(req.account, req.targetAddress, req.value, req.data, req.currentSignatures, req.threshold);
+                  }}
+                  disabled={req.signatures.some(
+                    (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
+                  )}
+                >
+                  {req.signatures.some(
+                    (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
+                  ) ? "Your Already Sign" : "Sign & Approve"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+            Ready To Execute
+          </h3>
+          <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            {myRequests.filter(item => item.status.toLowerCase() === "ready").length} Action Required
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {myRequests.filter(item => item.status.toLowerCase() === "ready").map((req, i) => (
+            <div
+              key={i}
+              className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+            >
+              {/* Header: Smart Account Source */}
+              <div className="mb-2">
+                <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
+                <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
+              </div>
+
+              {/* Body: Transaction Details */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="bg-white p-2 rounded border border-slate-100">
+                  <p className="text-[9px] text-gray-400 font-bold">Target</p>
+                  <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
+                </div>
+                <div className="bg-white p-2 rounded border border-slate-100">
+                  <p className="text-[9px] text-gray-400 font-bold">Value</p>
+                  <p className="text-[10px] font-mono">{req.value} Wei</p>
+                </div>
+              </div>
+
+              {/* Reason & Status */}
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
+                  <p className="text-[9px] text-blue-500 font-semibold mt-1">
+                    Required: {req.currentSignatures}/{req.threshold} Signatures
+                  </p>
+                </div>
+
+                <button
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
+                  onClick={() => {
+                    handleExecute(req)
+                  }}
+                >
+                  Execute
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+            Executed Transactions
+          </h3>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          {Object.entries(executedHistory).map(([account, transactions]) => (
+            transactions.map((tx, idx) => (
               <div
-                key={i}
+                key={idx}
                 className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
               >
                 {/* Header: Smart Account Source */}
                 <div className="mb-2">
                   <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                  <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
+                  <p className="text-[10px] font-mono text-slate-700 truncate">{tx.account}</p>
                 </div>
 
                 {/* Body: Transaction Details */}
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="bg-white p-2 rounded border border-slate-100">
                     <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                    <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
+                    <p className="text-[10px] font-mono truncate">{tx.targetAddress}</p>
                   </div>
                   <div className="bg-white p-2 rounded border border-slate-100">
                     <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                    <p className="text-[10px] font-mono">{req.value} Wei</p>
-                  </div>
-                </div>
-
-                {/* Reason & Status */}
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
-                    <p className="text-[9px] text-blue-500 font-semibold mt-1">
-                      Required: {req.currentSignatures}/{req.threshold} Signatures
-                    </p>
-                  </div>
-
-                  <button
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
-                    onClick={() => {
-                      handleSign(req.account, req.targetAddress, req.value, req.data, req.currentSignatures, req.threshold);
-                    }}
-                    disabled={req.signatures.some(
-                      (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
-                    )}
-                  >
-                    {req.signatures.some(
-                      (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
-                    ) ? "Your Already Sign" : "Sign & Approve"}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {myRequests.length > 0 && (
-        <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Ready To Execute
-            </h3>
-            <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {myRequests.filter(item => item.status.toLowerCase() === "ready").length} Action Required
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {myRequests.filter(item => item.status.toLowerCase() === "ready").map((req, i) => (
-              <div
-                key={i}
-                className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
-              >
-                {/* Header: Smart Account Source */}
-                <div className="mb-2">
-                  <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                  <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
-                </div>
-
-                {/* Body: Transaction Details */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-white p-2 rounded border border-slate-100">
-                    <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                    <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
-                  </div>
-                  <div className="bg-white p-2 rounded border border-slate-100">
-                    <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                    <p className="text-[10px] font-mono">{req.value} Wei</p>
-                  </div>
-                </div>
-
-                {/* Reason & Status */}
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
-                    <p className="text-[9px] text-blue-500 font-semibold mt-1">
-                      Required: {req.currentSignatures}/{req.threshold} Signatures
-                    </p>
-                  </div>
-
-                  <button
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
-                    onClick={() => {
-                      handleExecute(req)
-                    }}
-                  >
-                    Execute
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-      {myRequests.length > 0 && (
-        <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Executed Transactions
-            </h3>
-            <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {myRequests.filter(item => item.status.toLowerCase() === "executed").length} Action Required
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {myRequests.filter(item => item.status.toLowerCase() === "executed").map((req, i) => (
-              <div
-                key={i}
-                className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
-              >
-                {/* Header: Smart Account Source */}
-                <div className="mb-2">
-                  <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                  <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
-                </div>
-
-                {/* Body: Transaction Details */}
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-white p-2 rounded border border-slate-100">
-                    <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                    <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
-                  </div>
-                  <div className="bg-white p-2 rounded border border-slate-100">
-                    <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                    <p className="text-[10px] font-mono">{req.value} Wei</p>
-                  </div>
-                </div>
-
-                {/* Reason & Status */}
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
-                    <p className="text-[9px] text-blue-500 font-semibold mt-1">
-                      Required: {req.currentSignatures}/{req.threshold} Signatures
-                    </p>
+                    <p className="text-[10px] font-mono">{tx.value} Wei</p>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            ))
+          ))}
         </div>
-      )}
+      </div>
+
     </div>
   );
 }
