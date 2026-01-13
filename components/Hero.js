@@ -10,13 +10,33 @@ import {
   useSignMessage
 } from "wagmi";
 import { useSelector } from "react-redux";
-import { parseEventLogs, encodeAbiParameters, parseAbiParameters, encodeFunctionData, keccak256 } from "viem";
+import { parseEventLogs, encodeAbiParameters, parseAbiParameters, encodeFunctionData, keccak256, erc20Abi } from "viem";
 import { IoMdCloseCircleOutline, IoMdAddCircleOutline } from "react-icons/io";
 import { encode } from "punycode";
 import { createPublicClient, http, toHex } from "viem";
 import { sepolia } from "viem/chains";
 import { parseUnits, parseEther, getAddress } from "viem";
 import { toast } from "react-toastify";
+
+const ERC20_TRANSFER_ABI = [
+  {
+    type: "function",
+    name: "transfer",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "decimals",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint8" }],
+  },
+]
 
 const ENTRY_POINT_ADDRESS = process.env.NEXT_PUBLIC_ENTRYPOINT_ADDRESS;
 
@@ -41,6 +61,9 @@ export default function Hero() {
   const [callData, setCallData] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const [value2, setValue2] = React.useState(0);
+  const [transferType, setTransferType] = useState("eth");
+  const [tokenReceiver, setTokenReceiver] = useState("");
+  const [tokenAmount, setTokenAmount] = useState("");
 
   const handleChange = (event, newValue) => {
     setValue2(newValue);
@@ -170,19 +193,41 @@ export default function Hero() {
   //   }
   // };
 
-  const handleRequest = async (accountAddress) => {
+  const handleRequest = async (accountAddress, type) => {
     if (myRequests.some(item => item.account === (deployedAccount || newAccountAddress))) return;
 
     fetchUserData(address);
 
-    const payload = {
-      accountAddress: accountAddress,
-      target: target,
-      value: value,
-      data: callData,
-      reason: "Payment for services",
-      note: "Initial test request"
-    };
+    let payload;
+
+    if (type === "erc20") {
+      const calldata2 = await buildErc20TransferCalldata(
+        target,
+        tokenReceiver,
+        tokenAmount
+      );
+
+      payload = {
+        accountAddress: accountAddress,
+        target: target,
+        value: "0",
+        data: calldata2,
+        reason: "Payment for services",
+        note: "Initial test request"
+      };
+    }
+    else {
+      payload = {
+        accountAddress: accountAddress,
+        target: target,
+        value: value,
+        data: callData,
+        reason: "Payment for services",
+        note: "Initial test request"
+      };
+    }
+
+    console.log(payload);
 
     try {
       await fetch("/api/createRequest", {
@@ -375,7 +420,7 @@ export default function Hero() {
           functionName: "execute",
           args: [
             req.targetAddress,
-            req.value,
+            toHex(parseEther(req.value)),
             req.data
           ],
         }),
@@ -393,7 +438,7 @@ export default function Hero() {
         getAddress(a.signerAddress).toLowerCase().localeCompare(getAddress(b.signerAddress).toLowerCase())
       );
 
-      const sigsArray = sortedSignatures.map(s => s.signature);
+      const sigsArray = sortedSignatures?.map(s => s.signature);
 
       const encodedSignatures = encodeAbiParameters(
         parseAbiParameters('bytes[]'),
@@ -470,6 +515,33 @@ export default function Hero() {
     }
   };
 
+  async function buildErc20TransferCalldata(
+    tokenAddress,
+    to,
+    amount,
+  ) {
+
+    console.log(tokenAddress, to, amount);
+    const decimals = await publicClient.readContract({
+      address: getAddress(tokenAddress),
+      abi: ERC20_TRANSFER_ABI,
+      functionName: "decimals",
+    })
+
+    return encodeFunctionData({
+      abi: ERC20_TRANSFER_ABI,
+      functionName: "transfer",
+      args: [
+        getAddress(to),
+        parseUnits(amount, decimals),
+      ],
+    })
+  }
+
+  // useEffect(() => {
+  //   buildErc20TransferCalldata("0x8e3ae5f22629F8FC49a2a224df7Eb992FE003012", "0x8c5e53246EbC332792FAC818C8ab0B0fF27629F3", "100000");
+  // }, [])
+
   return (
     <div className="bg-slate-50 min-h-screen flex items-center justify-center p-4 flex-col gap-4">
 
@@ -480,7 +552,7 @@ export default function Hero() {
 
           <div className="space-y-3">
             <label className="text-sm font-semibold text-gray-700">Signer Addresses</label>
-            {signerAddresses.map((signer, index) => (
+            {signerAddresses?.map((signer, index) => (
               <div key={index} className="flex items-center gap-2">
                 <input
                   type="text"
@@ -536,8 +608,83 @@ export default function Hero() {
               {deployedAccount || newAccountAddress}
             </p>
           </div>
+          <div className="w-full flex items-center justify-center gap-4">
+            <button onClick={() => setValue2("Transfer")}>Transfer</button>
+            <button onClick={() => setValue2("Approve")}>Approve</button>
+            <button onClick={() => setValue2("Custom")}>Custom</button>
+          </div>
 
-          <div className="space-y-4 pt-2">
+          {value2 === "Transfer" && <div className="space-y-4 pt-2">
+            <div className="space-y-1">
+              <select onChange={(e) => {
+                setTransferType(e.target.value);
+
+                if (e.target.value === "erc20" || e.target.value === "nft") {
+                  setValue("0");
+                  setCallData("");
+                }
+              }}>
+                <option value="eth">ETH</option>
+                <option value="erc20">ERC20</option>
+                <option value="nft">NFT</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">{transferType === "eth" ? "Receiver Address" : transferType === "erc20" ? "Token Address" : "NFT Address"}</label>
+              <input
+                type="text"
+                value={target}
+                onChange={(e) => setTarget(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="0x..."
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">Value (Wei)</label>
+              <input
+                type="text"
+                value={value}
+                onChange={(e) => {
+                  setValue(e.target.value);
+                }}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
+                placeholder="0"
+                disabled={transferType === "erc20" || transferType === "nft"}
+              />
+            </div>
+
+            {(transferType === "erc20" || transferType === "nft") && <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">Receiver Address</label>
+              <input
+                type="text"
+                value={tokenReceiver}
+                onChange={(e) => setTokenReceiver(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="0x..."
+              />
+            </div>}
+
+            {(transferType === "erc20" || transferType === "nft") && <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">Amount</label>
+              <input
+                type="text"
+                value={tokenAmount}
+                onChange={(e) => setTokenAmount(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="0x..."
+              />
+            </div>}
+
+            <button
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors shadow-md disabled:opacity-50"
+              onClick={() => handleRequest(deployedAccount || newAccountAddress, transferType)}
+              disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
+            >
+              Request Transaction
+            </button>
+          </div>}
+          {value2 === "Approve" && <div className="space-y-4 pt-2">
             <div className="space-y-1">
               <label className="text-xs font-bold text-gray-600 uppercase">Target Address</label>
               <input
@@ -577,7 +724,48 @@ export default function Hero() {
             >
               Request Transaction
             </button>
-          </div>
+          </div>}
+          {value2 === "Custom" && <div className="space-y-4 pt-2">
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">Target Address</label>
+              <input
+                type="text"
+                value={target}
+                onChange={(e) => setTarget(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="0x..."
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">Value (Wei)</label>
+              <input
+                type="text"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
+                placeholder="0"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">Data (Hex)</label>
+              <textarea
+                value={callData}
+                onChange={(e) => setCallData(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm font-mono h-20 outline-none"
+                placeholder="0x..."
+              />
+            </div>
+
+            <button
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors shadow-md disabled:opacity-50"
+              onClick={() => handleRequest(deployedAccount || newAccountAddress)}
+              disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
+            >
+              Request Transaction
+            </button>
+          </div>}
         </div>
       )}
 
@@ -585,14 +773,12 @@ export default function Hero() {
         <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Signer For</h3>
           <div className="flex flex-col gap-1">
-            {signerFor.map((acc, i) => (
+            {signerFor?.map((acc, i) => (
               <p key={i} className="text-[10px] font-mono bg-gray-50 p-1 rounded truncate border border-gray-200">{acc}</p>
             ))}
           </div>
         </div>
       )}
-
-      {/* Pending Transactions Section */}
 
       <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
         <div className="flex justify-between items-center mb-4">
@@ -600,40 +786,37 @@ export default function Hero() {
             Pending Transactions
           </h3>
           <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-            {myRequests.filter(item => item.status.toLowerCase() === "pending").length} Action Required
+            {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length} Action Required
           </span>
         </div>
 
         <div className="flex flex-col gap-3">
-          {myRequests.filter(item => item.status.toLowerCase() === "pending").map((req, i) => (
+          {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.map((req, i) => (
             <div
               key={i}
               className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
             >
-              {/* Header: Smart Account Source */}
               <div className="mb-2">
                 <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
+                <p className="text-[10px] font-mono text-slate-700 truncate">{req?.account}</p>
               </div>
 
-              {/* Body: Transaction Details */}
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div className="bg-white p-2 rounded border border-slate-100">
                   <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                  <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
+                  <p className="text-[10px] font-mono truncate">{req?.targetAddress}</p>
                 </div>
                 <div className="bg-white p-2 rounded border border-slate-100">
                   <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                  <p className="text-[10px] font-mono">{req.value} Wei</p>
+                  <p className="text-[10px] font-mono">{req?.value}</p>
                 </div>
               </div>
 
-              {/* Reason & Status */}
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
+                  <p className="text-[10px] text-gray-600 italic">"{req?.reason || "No reason provided"}"</p>
                   <p className="text-[9px] text-blue-500 font-semibold mt-1">
-                    Required: {req.currentSignatures}/{req.threshold} Signatures
+                    Required: {req?.currentSignatures}/{req?.threshold} Signatures
                   </p>
                 </div>
 
@@ -667,18 +850,16 @@ export default function Hero() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {myRequests.filter(item => item.status.toLowerCase() === "ready").map((req, i) => (
+          {myRequests.filter(item => item.status.toLowerCase() === "ready")?.map((req, i) => (
             <div
               key={i}
               className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
             >
-              {/* Header: Smart Account Source */}
               <div className="mb-2">
                 <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
                 <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
               </div>
 
-              {/* Body: Transaction Details */}
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <div className="bg-white p-2 rounded border border-slate-100">
                   <p className="text-[9px] text-gray-400 font-bold">Target</p>
@@ -690,7 +871,6 @@ export default function Hero() {
                 </div>
               </div>
 
-              {/* Reason & Status */}
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
@@ -721,19 +901,18 @@ export default function Hero() {
         </div>
 
         <div className="flex flex-col gap-3">
-          {Object.entries(executedHistory).map(([account, transactions]) => (
-            transactions.map((tx, idx) => (
+          {Object.entries(executedHistory)?.map(([account, transactions]) => {
+            const txArray = Array.isArray(transactions) ? transactions : [];
+
+            return txArray?.map((tx, idx) => (
               <div
                 key={idx}
                 className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
               >
-                {/* Header: Smart Account Source */}
                 <div className="mb-2">
                   <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
                   <p className="text-[10px] font-mono text-slate-700 truncate">{tx.account}</p>
                 </div>
-
-                {/* Body: Transaction Details */}
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <div className="bg-white p-2 rounded border border-slate-100">
                     <p className="text-[9px] text-gray-400 font-bold">Target</p>
@@ -746,7 +925,7 @@ export default function Hero() {
                 </div>
               </div>
             ))
-          ))}
+          })}
         </div>
       </div>
 
