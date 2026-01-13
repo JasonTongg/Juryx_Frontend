@@ -16,6 +16,7 @@ import { encode } from "punycode";
 import { createPublicClient, http, toHex } from "viem";
 import { sepolia } from "viem/chains";
 import { parseUnits, parseEther, getAddress } from "viem";
+import { toast } from "react-toastify";
 
 const ENTRY_POINT_ADDRESS = process.env.NEXT_PUBLIC_ENTRYPOINT_ADDRESS;
 
@@ -31,12 +32,19 @@ export default function Hero() {
   const [deployedAccount, setDeployedAccount] = useState("");
   const [signerFor, setSignerFor] = useState([]);
   const [myRequests, setMyRequests] = useState([]);
+  const [isLoadingSign, setIsLoadingSign] = useState(false);
+  const [isLoadingExecute, setIsLoadingExecute] = useState(false);
 
   // --- New State for Execution Section ---
   const [target, setTarget] = useState("");
   const [value, setValue] = useState("");
-  const [callData, setCallData] = useState("0x");
+  const [callData, setCallData] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
+  const [value2, setValue2] = React.useState(0);
+
+  const handleChange = (event, newValue) => {
+    setValue2(newValue);
+  };
 
   const { writeContractAsync: executeTx } = useWriteContract();
   const publicClient = createPublicClient({
@@ -82,25 +90,39 @@ export default function Hero() {
   const accountCreatedRef = useRef(false);
 
   useEffect(() => {
-    if (factoryDeployed && factoryAddress && address && !accountCreatedRef.current) {
-      accountCreatedRef.current = true;
+    const run = async () => {
+      if (factoryDeployed && factoryAddress && address && !accountCreatedRef.current) {
+        accountCreatedRef.current = true;
 
-      const validSigners = signerAddresses.filter((s) => s.trim() !== "");
+        const validSigners = signerAddresses.filter((s) => s.trim() !== "");
 
-      createAccount({
-        address: factoryAddress,
-        abi: abi.AccountFactoryAbi,
-        functionName: "createAccount",
-        args: [validSigners, BigInt(threshold), ENTRY_POINT_ADDRESS],
-      });
+        try {
+          await createAccount({
+            address: factoryAddress,
+            abi: abi.AccountFactoryAbi,
+            functionName: "createAccount",
+            args: [validSigners, BigInt(threshold), ENTRY_POINT_ADDRESS],
+          });
+        } catch (error) {
+          setIsLoading(false);
+          const message =
+            error?.shortMessage ||
+            error?.message ||
+            "Unknown error";
+
+          toast.dark(message);
+        }
+      }
     }
+
+    run();
   }, [factoryDeployed, factoryAddress, address, createAccount, abi, signerAddresses, threshold]);
 
   useEffect(() => {
     if (createReceipt) {
       setIsLoading(false);
       setUserApi();
-      console.log("Account successfully deployed and recorded!");
+      toast.dark("Account successfully created...");
     }
   }, [createReceipt]);
 
@@ -110,11 +132,22 @@ export default function Hero() {
     setIsLoading(true);
     accountCreatedRef.current = false;
 
-    await deployFactory({
-      abi: abi.AccountFactoryAbi,
-      bytecode: factoryByteCode,
-      args: [],
-    });
+    try {
+      toast.dark("Creating Account...");
+      await deployFactory({
+        abi: abi.AccountFactoryAbi,
+        bytecode: factoryByteCode,
+        args: [],
+      });
+    } catch (error) {
+      const message =
+        error?.shortMessage ||
+        error?.message ||
+        "Unknown error";
+
+      toast.dark(message);
+      setIsLoading(false);
+    }
   };
 
   // --- New Execute Handler ---
@@ -138,6 +171,8 @@ export default function Hero() {
   // };
 
   const handleRequest = async (accountAddress) => {
+    if (myRequests.some(item => item.account === (deployedAccount || newAccountAddress))) return;
+
     fetchUserData(address);
 
     const payload = {
@@ -160,6 +195,12 @@ export default function Hero() {
       loadHistory(address);
     } catch (error) {
       console.error("Error submitting request:", error);
+      toast.dark("Error submitting request");
+    } finally {
+      toast.dark("Transaction request submitted");
+      setTarget("");
+      setValue("");
+      setCallData("");
     }
   };
 
@@ -246,6 +287,8 @@ export default function Hero() {
 
   const handleSign = async (accountAddress, target, value, data, currentSignatures, threshold) => {
     try {
+      setIsLoadingSign(true);
+      toast.dark("Signing Message...");
       const plainString = "Hello Multisig";
       const messageHash = keccak256(toHex(plainString));
 
@@ -253,7 +296,7 @@ export default function Hero() {
         message: { raw: messageHash }
       });
 
-      console.log("Signature received:", signature);
+      toast.dark("Message signed successfully!");
 
       await fetch("/api/addSignature", {
         method: "POST",
@@ -270,8 +313,15 @@ export default function Hero() {
       }
       loadRequests(address);
       loadHistory(address);
+      setIsLoadingSign(false);
     } catch (err) {
-      console.error("Signing failed:", err);
+      const message =
+        err?.shortMessage ||
+        err?.message ||
+        "Unknown error";
+
+      toast.dark(message);
+      setIsLoadingSign(false);
     }
   };
 
@@ -288,7 +338,7 @@ export default function Hero() {
 
       const data = await response.json();
       if (data.success) {
-        alert(`Status updated to ${status}`);
+        toast.dark(`Status updated to ${status}`);
       }
     } catch (error) {
       console.error("Failed to update status", error);
@@ -312,6 +362,7 @@ export default function Hero() {
   const handleExecute = async (req) => {
     setIsLoading(true);
     try {
+      toast.dark("Executing Transaction...");
 
       const hexNonce = (await getHexNonce(req.account)).toString(16);
 
@@ -356,9 +407,15 @@ export default function Hero() {
       handleFinalExecution(userOp, req);
 
     } catch (err) {
-      console.error("Execution failed:", err);
+      const message =
+        err?.shortMessage ||
+        err?.message ||
+        "Unknown error";
+
+      toast.dark(message);
     } finally {
       setIsLoading(false);
+
     }
   };
 
@@ -366,6 +423,7 @@ export default function Hero() {
 
   const handleFinalExecution = async (userOp, req) => {
     setIsLoading(true);
+    setIsLoadingExecute(true);
     try {
       const txHash = await writeContractExecute({
         address: process.env.NEXT_PUBLIC_ENTRYPOINT_ADDRESS,
@@ -395,15 +453,20 @@ export default function Hero() {
           loadHistory(address)
         ]);
 
-        alert("Transaction Executed Successfully!");
+        toast.dark("Transaction Executed Successfully!");
       } else {
         throw new Error("Transaction reverted on-chain");
       }
     } catch (err) {
-      console.error("handleOps failed:", err);
-      alert("Blockchain execution failed. Check console for details.");
+      const message =
+        err?.shortMessage ||
+        err?.message ||
+        "Unknown error";
+
+      toast.dark(message);
     } finally {
       setIsLoading(false);
+      setIsLoadingExecute(false);
     }
   };
 
@@ -510,6 +573,7 @@ export default function Hero() {
             <button
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors shadow-md disabled:opacity-50"
               onClick={() => handleRequest(deployedAccount || newAccountAddress)}
+              disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
             >
               Request Transaction
             </button>
@@ -582,7 +646,7 @@ export default function Hero() {
                     (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
                   )}
                 >
-                  {req.signatures.some(
+                  {isLoadingSign ? "Signing..." : req.signatures.some(
                     (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
                   ) ? "Your Already Sign" : "Sign & Approve"}
                 </button>
@@ -641,7 +705,7 @@ export default function Hero() {
                     handleExecute(req)
                   }}
                 >
-                  Execute
+                  {isLoadingExecute ? "Executing..." : "Execute"}
                 </button>
               </div>
             </div>
