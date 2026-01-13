@@ -4,6 +4,7 @@ import { getAddress } from "viem";
 
 const requestPath = path.join(process.cwd(), "data", "request.json");
 const executedPath = path.join(process.cwd(), "data", "executedRequest.json");
+const signaturePath = path.join(process.cwd(), "data", "signature.json");
 
 // Helper to read JSON files safely
 function readJson(filePath) {
@@ -57,6 +58,12 @@ export default function handler(req, res) {
             // 6. Write both files back to disk
             fs.writeFileSync(executedPath, JSON.stringify(allExecuted, null, 2));
             fs.writeFileSync(requestPath, JSON.stringify(allPending, null, 2));
+
+            const allSignatures = readJson(signaturePath);
+            if (allSignatures[formattedAccount]) {
+                delete allSignatures[formattedAccount];
+                fs.writeFileSync(signaturePath, JSON.stringify(allSignatures, null, 2));
+            }
 
             return res.status(200).json({
                 success: true,
