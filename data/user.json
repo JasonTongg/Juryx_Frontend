@@ -7,10 +7,10 @@
     "deployedAccounts": "0xa308A2F7E678436cbD6828bd9972606E09eE713E"
   },
   "0xD38F2E53114CB54670daB5205C012B0B511240a0": {
-    "factory": "",
+    "factory": "0x73cC8A7C043184219608e7edFd695Ad331aF48d9",
     "ownerOf": [
-      "0xa308A2F7E678436cbD6828bd9972606E09eE713E"
+      "0xC85Bf8473215b7ed770E788fCD2c4c505299f736"
     ],
-    "deployedAccounts": ""
+    "deployedAccounts": "0xC85Bf8473215b7ed770E788fCD2c4c505299f736"
   }
 }
