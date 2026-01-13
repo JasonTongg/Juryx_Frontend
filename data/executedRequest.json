@@ -181,6 +181,18 @@
       "approvedBy": [],
       "createdAt": "2026-01-13T10:11:55.532Z",
       "executedAt": "2026-01-13T10:12:49.706Z"
+    },
+    {
+      "targetAddress": "0xeFF3521fb13228C767Ad6Dc3b934F9eFAC9c56aD",
+      "value": "0.1",
+      "data": "0x",
+      "reason": "Payment for services",
+      "note": "Initial test request",
+      "status": "Executed",
+      "threshold": 1,
+      "approvedBy": [],
+      "createdAt": "2026-01-13T10:13:33.558Z",
+      "executedAt": "2026-01-13T10:14:01.563Z"
     }
   ]
 }
