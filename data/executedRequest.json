@@ -193,6 +193,42 @@
       "approvedBy": [],
       "createdAt": "2026-01-13T10:13:33.558Z",
       "executedAt": "2026-01-13T10:14:01.563Z"
+    },
+    {
+      "targetAddress": "0x3e0736b6E14b4F39CA68Fdbf08b3939c0Bb58284",
+      "value": "0",
+      "data": "0x42842e0e000000000000000000000000c85bf8473215b7ed770e788fcd2c4c505299f736000000000000000000000000eff3521fb13228c767ad6dc3b934f9efac9c56ad0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": "NFT Transfer",
+      "note": "ERC721 Transfer Request",
+      "status": "Executed",
+      "threshold": 1,
+      "approvedBy": [],
+      "createdAt": "2026-01-14T02:11:29.559Z",
+      "executedAt": "2026-01-14T02:11:53.341Z"
+    },
+    {
+      "targetAddress": "0xeC22449Be40cc1A689CC38716eaC8f133da9Ca40",
+      "value": "0",
+      "data": "0x095ea7b3000000000000000000000000eff3521fb13228c767ad6dc3b934f9efac9c56ad00000000000000000000000000000000000000000000d3c21bcecceda1000000",
+      "reason": "ERC20 Approve",
+      "note": "ERC20 Approve Request",
+      "status": "Executed",
+      "threshold": 1,
+      "approvedBy": [],
+      "createdAt": "2026-01-14T02:48:12.365Z",
+      "executedAt": "2026-01-14T02:48:40.555Z"
+    },
+    {
+      "targetAddress": "0x3e0736b6E14b4F39CA68Fdbf08b3939c0Bb58284",
+      "value": "0",
+      "data": "0x095ea7b3000000000000000000000000eff3521fb13228c767ad6dc3b934f9efac9c56ad0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": "ERC20 Approve",
+      "note": "ERC20 Approve Request",
+      "status": "Executed",
+      "threshold": 1,
+      "approvedBy": [],
+      "createdAt": "2026-01-14T02:58:14.542Z",
+      "executedAt": "2026-01-14T02:58:41.100Z"
     }
   ]
 }

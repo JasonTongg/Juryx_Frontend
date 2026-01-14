@@ -36,7 +36,42 @@ const ERC20_TRANSFER_ABI = [
     inputs: [],
     outputs: [{ type: "uint8" }],
   },
+  {
+    type: "function",
+    name: "approve",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
+  },
 ]
+
+const ERC721_TRANSFER_ABI = [
+  {
+    type: "function",
+    name: "safeTransferFrom",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "approve",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "to", type: "address" },
+      { name: "tokenId", type: "uint256" },
+    ],
+    outputs: [],
+  },
+];
+
 
 const ENTRY_POINT_ADDRESS = process.env.NEXT_PUBLIC_ENTRYPOINT_ADDRESS;
 
@@ -60,10 +95,15 @@ export default function Hero() {
   const [value, setValue] = useState("");
   const [callData, setCallData] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
-  const [value2, setValue2] = React.useState(0);
+  const [value2, setValue2] = React.useState("Transfer");
   const [transferType, setTransferType] = useState("eth");
   const [tokenReceiver, setTokenReceiver] = useState("");
   const [tokenAmount, setTokenAmount] = useState("");
+  const [tokenId, setTokenId] = useState("");
+  const [approveType, setApproveType] = useState("approve-erc20");
+  const [approveSpender, setApproveSpender] = useState("");
+  const [approveAmount, setApproveAmount] = useState("");
+  const [approveTokenId, setApproveTokenId] = useState("");
 
   const handleChange = (event, newValue) => {
     setValue2(newValue);
@@ -212,8 +252,55 @@ export default function Hero() {
         target: target,
         value: "0",
         data: calldata2,
-        reason: "Payment for services",
-        note: "Initial test request"
+        reason: "Token Transfer",
+        note: "ERC20 Transfer Request"
+      };
+    }
+    else if (type === "nft") {
+      const calldata3 = await buildErc721TransferCalldata(
+        deployedAccount,
+        tokenReceiver,
+        tokenId
+      );
+
+      payload = {
+        accountAddress: accountAddress,
+        target: target,
+        value: "0",
+        data: calldata3,
+        reason: "NFT Transfer",
+        note: "ERC721 Transfer Request"
+      };
+    }
+    else if (type === "approve-erc20") {
+      const calldata4 = await buildErc20ApproveCalldata(
+        target,
+        approveSpender,
+        approveAmount
+      );
+
+      payload = {
+        accountAddress: accountAddress,
+        target: target,
+        value: "0",
+        data: calldata4,
+        reason: "ERC20 Approve",
+        note: "ERC20 Approve Request"
+      };
+    }
+    else if (type === "approve-nft") {
+      const calldata4 = await buildErc721ApproveTokenCalldata(
+        approveSpender,
+        approveTokenId
+      );
+
+      payload = {
+        accountAddress: accountAddress,
+        target: target,
+        value: "0",
+        data: calldata4,
+        reason: "ERC20 Approve",
+        note: "ERC20 Approve Request"
       };
     }
     else {
@@ -222,12 +309,10 @@ export default function Hero() {
         target: target,
         value: value,
         data: callData,
-        reason: "Payment for services",
-        note: "Initial test request"
+        reason: "ETH Transfer",
+        note: "ETH Transfer Request"
       };
     }
-
-    console.log(payload);
 
     try {
       await fetch("/api/createRequest", {
@@ -246,6 +331,12 @@ export default function Hero() {
       setTarget("");
       setValue("");
       setCallData("");
+      setTokenReceiver("");
+      setTokenAmount("");
+      setTokenId("");
+      setApproveSpender("");
+      setApproveTokenId("");
+      setApproveAmount("");
     }
   };
 
@@ -538,9 +629,56 @@ export default function Hero() {
     })
   }
 
-  // useEffect(() => {
-  //   buildErc20TransferCalldata("0x8e3ae5f22629F8FC49a2a224df7Eb992FE003012", "0x8c5e53246EbC332792FAC818C8ab0B0fF27629F3", "100000");
-  // }, [])
+  async function buildErc721TransferCalldata(
+    from,
+    to,
+    tokenId
+  ) {
+    return encodeFunctionData({
+      abi: ERC721_TRANSFER_ABI,
+      functionName: "safeTransferFrom",
+      args: [
+        getAddress(from),
+        getAddress(to),
+        BigInt(tokenId),
+      ],
+    });
+  }
+
+  async function buildErc20ApproveCalldata(
+    tokenAddress,
+    spender,
+    amount
+  ) {
+    const decimals = await publicClient.readContract({
+      address: getAddress(tokenAddress),
+      abi: ERC20_TRANSFER_ABI,
+      functionName: "decimals",
+    });
+
+    return encodeFunctionData({
+      abi: ERC20_TRANSFER_ABI,
+      functionName: "approve",
+      args: [
+        getAddress(spender),
+        parseUnits(amount, decimals),
+      ],
+    });
+  }
+
+  async function buildErc721ApproveTokenCalldata(
+    operator,
+    tokenId
+  ) {
+    return encodeFunctionData({
+      abi: ERC20_TRANSFER_ABI,
+      functionName: "approve",
+      args: [
+        getAddress(operator),
+        BigInt(tokenId),
+      ],
+    });
+  }
 
   return (
     <div className="bg-slate-50 min-h-screen flex items-center justify-center p-4 flex-col gap-4">
@@ -665,12 +803,23 @@ export default function Hero() {
               />
             </div>}
 
-            {(transferType === "erc20" || transferType === "nft") && <div className="space-y-1">
+            {(transferType === "erc20") && <div className="space-y-1">
               <label className="text-xs font-bold text-gray-600 uppercase">Amount</label>
               <input
-                type="text"
+                type="number"
                 value={tokenAmount}
                 onChange={(e) => setTokenAmount(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                placeholder="0x..."
+              />
+            </div>}
+
+            {(transferType === "nft") && <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">Token ID</label>
+              <input
+                type="number"
+                value={tokenId}
+                onChange={(e) => setTokenId(e.target.value)}
                 className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
                 placeholder="0x..."
               />
@@ -686,7 +835,21 @@ export default function Hero() {
           </div>}
           {value2 === "Approve" && <div className="space-y-4 pt-2">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-600 uppercase">Target Address</label>
+              <select onChange={(e) => {
+                setApproveType(e.target.value);
+
+                if (e.target.value === "erc20" || e.target.value === "nft") {
+                  setValue("0");
+                  setCallData("");
+                }
+              }}>
+                <option value="approve-erc20">ERC20</option>
+                <option value="approve-nft">NFT</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">Token Address</label>
               <input
                 type="text"
                 value={target}
@@ -697,29 +860,41 @@ export default function Hero() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-600 uppercase">Value (Wei)</label>
+              <label className="text-xs font-bold text-gray-600 uppercase">Spender Address</label>
               <input
                 type="text"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
+                value={approveSpender}
+                onChange={(e) => setApproveSpender(e.target.value)}
                 className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
                 placeholder="0"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-gray-600 uppercase">Data (Hex)</label>
-              <textarea
-                value={callData}
-                onChange={(e) => setCallData(e.target.value)}
-                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm font-mono h-20 outline-none"
-                placeholder="0x..."
+            {approveType === "approve-erc20" && <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">Amount</label>
+              <input
+                type="number"
+                value={approveAmount}
+                onChange={(e) => setApproveAmount(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
+                placeholder="0"
               />
-            </div>
+            </div>}
+
+            {approveType === "approve-nft" && <div className="space-y-1">
+              <label className="text-xs font-bold text-gray-600 uppercase">Token ID</label>
+              <input
+                type="number"
+                value={approveTokenId}
+                onChange={(e) => setApproveTokenId(e.target.value)}
+                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
+                placeholder="0"
+              />
+            </div>}
 
             <button
               className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors shadow-md disabled:opacity-50"
-              onClick={() => handleRequest(deployedAccount || newAccountAddress)}
+              onClick={() => handleRequest(deployedAccount || newAccountAddress, approveType)}
               disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
             >
               Request Transaction
