@@ -23,7 +23,16 @@ import { FaPaperPlane } from "react-icons/fa";
 import { FaRegClock } from "react-icons/fa";
 import { FaCheckCircle } from "react-icons/fa";
 import { FaCheckDouble } from "react-icons/fa6";
-
+import { PiPiggyBankFill } from "react-icons/pi";
+import Logo from "../public/assets/Logo.png";
+import Image from "next/image";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { FaClock } from "react-icons/fa6";
+import { FaSignature } from "react-icons/fa";
+import { IoCopy } from "react-icons/io5";
+import { FaCheck } from "react-icons/fa";
+import { FaCode } from "react-icons/fa";
+import { FaEthereum, FaImage, FaCoins } from "react-icons/fa6";
 
 const ERC20_TRANSFER_ABI = [
   {
@@ -688,441 +697,574 @@ export default function Hero() {
     });
   }
 
+  function copyTextToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+
+        textarea.style.position = "fixed";
+        textarea.style.top = "0";
+        textarea.style.left = "0";
+        textarea.style.opacity = "0";
+
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+
+        const successful = document.execCommand("copy");
+        document.body.removeChild(textarea);
+
+        successful ? resolve() : reject(new Error("Copy failed"));
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+
   return (
-    <div className="w-full min-h-screen grid" style={{ gridTemplateColumns: "270px 1fr" }}>
-      <div className="w-full bg-white border-r-[#ececec] border-red-400-[3px] border-t-0 min-h-screen flex flex-col items-center p-4">
-        <button className="shadow-md shadow-[#5245e58c] bg-gradient-to-br from-[#5245e5] to-[#9134ea] text-white px-2 py-2 rounded-[10px] flex items-center justify-center gap-3 w-full disabled:cursor-not-allowed disabled:opacity-60" disabled={(deployedAccount || newAccountAddress)}><FaPlus /> Create New Wallet</button>
-        <div className="flex flex-col items-start justify-center mt-[2rem] w-full gap-1">
-          <p className="text-sm text-gray-600">NAVIGATION</p>
-          <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 0 ? { color: "#5245e5", backgroundColor: "#eef2ff" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(0)}><FaWallet /> My Wallets</button>
-          <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 1 ? { color: "#e545ca", backgroundColor: "#ffd5fb" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(1)}><FaPaperPlane /> New Transaction</button>
+    <div className="w-full grid" style={{ gridTemplateColumns: "270px 1fr", minHeight: "calc(100vh - 110px)" }}>
+      <div className="w-full bg-white  flex flex-col items-center border-r-[1px] border-gray-100">
+        <div className="border-b-[1px] border-gray-200 w-full p-4 py-[24px]">
+          <Image src={Logo} className="w-[180px] mx-auto" />
+        </div>
+        <div className="flex flex-col items-start justify-center w-full gap-1 p-4">
+          <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 0 ? { color: "#8F35EA", backgroundColor: "#FAF5FF" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(0)}><FaWallet /> My Wallets</button>
+          <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 1 ? { color: "#5245e5", backgroundColor: "#eef2ff" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(1)}><FaPaperPlane /> New Transaction</button>
           <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 2 ? { color: "#ea580c", backgroundColor: "#ffedd5" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(2)}><FaRegClock /> Pending <div className="bg-[#ffedd5] text-[#ea580c] font-bold w-[25px] h-[25px] flex items-center justify-center rounded-[30px]">{myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length}</div></button>
           <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 3 ? { color: "#16A34A", backgroundColor: "#DCFCE7" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(3)}><FaCheckCircle /> Ready to Execute <div className="bg-[#DCFCE7] text-[#16A34A] font-bold w-[25px] h-[25px] flex items-center justify-center rounded-[30px]">{myRequests.filter(item => item.status.toLowerCase() === "ready").length}</div></button>
           <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 4 ? { color: "#ea0c0c", backgroundColor: "#ffd5d5" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(4)}><FaCheckDouble /> Executed </button>
         </div>
       </div>
-      <div className="bg-[#f7f7f7] min-h-screen flex items-center justify-center p-4 flex-col gap-4 ">
-
-        {tab === 0 && (
-          <div className="flex flex-col gap-4 bg-white p-6 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800">Create Multi-Sig Account</h2>
-
-            <div className="space-y-3">
-              <label className="text-sm font-semibold text-gray-700">Signer Addresses</label>
-              {signerAddresses?.map((signer, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="0x..."
-                    value={signer}
-                    onChange={(e) => updateSigner(index, e.target.value)}
-                    className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
-                  {signerAddresses.length > 1 && (
-                    <button onClick={() => removeSignerField(index)} className="text-red-500 hover:text-red-700">
-                      <IoMdCloseCircleOutline size={24} />
-                    </button>
-                  )}
+      <div>
+        <div className="flex items-center justify-between py-4 px-12 border-b-[1px] border-gray-100">
+          <div className="flex flex-col">
+            <h2 className="text-2xl font-bold tracking-wider mb-[5px]">Multi-Signature Wallet</h2>
+            <p className="text-gray-500">Manage your secure multi-sig wallet</p>
+          </div>
+          <div>
+            {!(deployedAccount || newAccountAddress) && <button onClick={() => setTab(5)} className="w-fit shadow-md shadow-[#5245e58c] bg-gradient-to-br from-[#5245e5] to-[#9134ea] text-white px-6 py-2 rounded-[10px] flex items-center justify-center gap-3"><FaPlus /> Create New Wallet</button>}
+            <ConnectButton />
+          </div>
+        </div>
+        <div className="bg-[#f7f7f7] flex p-8 flex-col gap-4 ">
+          {(deployedAccount || newAccountAddress) && <div className="break-all bg-[rgba(255,255,255,1)] border-[1px] rounded-[1000px] flex items-center justify-start gap-3 w-fit overflow-hidden pr-5">
+            <div className="bg-gradient-to-br from-[#9134EA] to-[#305EEB] text-white py-2 pl-5 pr-4 border-r-[1px]">
+              <FaWallet />
+            </div>
+            {deployedAccount || newAccountAddress}
+            <IoCopy className="text-[#305EEB] cursor-pointer" onClick={() => {
+              copyTextToClipboard(deployedAccount || newAccountAddress)
+              toast.dark("Copied to Clipboard..")
+            }} />
+          </div>}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="flex flex-col bg-gradient-to-br from-[#9134EA] to-[#305EEB] p-5 rounded-[20px]">
+              <div className="flex items-center justify-between w-full">
+                <div className="bg-[rgba(255,255,255,0.2)] h-[50px] w-[50px] rounded-2xl flex items-center justify-center">
+                  <PiPiggyBankFill className="text-white text-3xl" />
                 </div>
-              ))}
-
-              <button
-                onClick={addSignerField}
-                className="flex items-center gap-1 text-sm text-blue-600 font-medium hover:underline"
-              >
-                <IoMdAddCircleOutline size={18} /> Add Signer
-              </button>
+                <p className="bg-[rgba(255,255,255,0.2)] text-white py-1 px-5 rounded-[10px] w-fit font-bold">
+                  Active
+                </p>
+              </div>
+              <p className="text-[rgba(255,255,255,0.7)] mt-[1rem]">Wallet Balance</p>
+              <h2 className="text-[rgba(255,255,255,1)] font-bold text-3xl my-[0.2rem]">34.5 ETH</h2>
+              <p className="text-[rgba(255,255,255,0.7)]">=$4.300.000 USD</p>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700">Required Threshold</label>
-              <input
-                type="number"
-                min="1"
-                max={signerAddresses.length}
-                value={threshold}
-                onChange={(e) => setThreshold(Number(e.target.value))}
-                className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
-              />
-            </div>
-
-            <button
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg disabled:opacity-50 transition-colors mt-2"
-              onClick={handleDeploy}
-              disabled={!isConnected || isLoading || !signerAddresses[0]}
-            >
-              {isLoading ? "Processing..." : "Deploy & Create Account"}
-            </button>
-          </div>
-        )}
-
-        {tab === 0 && signerFor.length > 0 && (
-          <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Signer For</h3>
-            <div className="flex flex-col gap-1">
-              {signerFor?.map((acc, i) => (
-                <p key={i} className="text-[10px] font-mono bg-gray-50 p-1 rounded truncate border border-gray-200">{acc}</p>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {tab === 1 && (
-          <div className="flex flex-col gap-4 bg-white p-6 rounded-xl shadow-lg w-full max-w-md border border-gray-100">
-            <div className="border-b pb-3">
-              <h2 className="text-xl font-bold text-gray-800">My Smart Account</h2>
-              <p className="text-[10px] font-mono text-blue-600 bg-blue-50 p-2 rounded mt-2 break-all">
-                {deployedAccount || newAccountAddress}
-              </p>
-            </div>
-            <div className="w-full flex items-center justify-center gap-4">
-              <button onClick={() => setValue2("Transfer")}>Transfer</button>
-              <button onClick={() => setValue2("Approve")}>Approve</button>
-              <button onClick={() => setValue2("Custom")}>Custom</button>
-            </div>
-
-            {value2 === "Transfer" && <div className="space-y-4 pt-2">
-              <div className="space-y-1">
-                <select onChange={(e) => {
-                  setTransferType(e.target.value);
-
-                  if (e.target.value === "erc20" || e.target.value === "nft") {
-                    setValue("0");
-                    setCallData("");
-                  }
-                }}>
-                  <option value="eth">ETH</option>
-                  <option value="erc20">ERC20</option>
-                  <option value="nft">NFT</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">{transferType === "eth" ? "Receiver Address" : transferType === "erc20" ? "Token Address" : "NFT Address"}</label>
-                <input
-                  type="text"
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="0x..."
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Value (Wei)</label>
-                <input
-                  type="text"
-                  value={value}
-                  onChange={(e) => {
-                    setValue(e.target.value);
-                  }}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
-                  placeholder="0"
-                  disabled={transferType === "erc20" || transferType === "nft"}
-                />
-              </div>
-
-              {(transferType === "erc20" || transferType === "nft") && <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Receiver Address</label>
-                <input
-                  type="text"
-                  value={tokenReceiver}
-                  onChange={(e) => setTokenReceiver(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="0x..."
-                />
-              </div>}
-
-              {(transferType === "erc20") && <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Amount</label>
-                <input
-                  type="number"
-                  value={tokenAmount}
-                  onChange={(e) => setTokenAmount(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="0x..."
-                />
-              </div>}
-
-              {(transferType === "nft") && <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Token ID</label>
-                <input
-                  type="number"
-                  value={tokenId}
-                  onChange={(e) => setTokenId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="0x..."
-                />
-              </div>}
-
-              <button
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors shadow-md disabled:opacity-50"
-                onClick={() => handleRequest(deployedAccount || newAccountAddress, transferType)}
-                disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
-              >
-                Request Transaction
-              </button>
-            </div>}
-            {value2 === "Approve" && <div className="space-y-4 pt-2">
-              <div className="space-y-1">
-                <select onChange={(e) => {
-                  setApproveType(e.target.value);
-
-                  if (e.target.value === "erc20" || e.target.value === "nft") {
-                    setValue("0");
-                    setCallData("");
-                  }
-                }}>
-                  <option value="approve-erc20">ERC20</option>
-                  <option value="approve-nft">NFT</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Token Address</label>
-                <input
-                  type="text"
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="0x..."
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Spender Address</label>
-                <input
-                  type="text"
-                  value={approveSpender}
-                  onChange={(e) => setApproveSpender(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
-                  placeholder="0"
-                />
-              </div>
-
-              {approveType === "approve-erc20" && <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Amount</label>
-                <input
-                  type="number"
-                  value={approveAmount}
-                  onChange={(e) => setApproveAmount(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
-                  placeholder="0"
-                />
-              </div>}
-
-              {approveType === "approve-nft" && <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Token ID</label>
-                <input
-                  type="number"
-                  value={approveTokenId}
-                  onChange={(e) => setApproveTokenId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
-                  placeholder="0"
-                />
-              </div>}
-
-              <button
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors shadow-md disabled:opacity-50"
-                onClick={() => handleRequest(deployedAccount || newAccountAddress, approveType)}
-                disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
-              >
-                Request Transaction
-              </button>
-            </div>}
-            {value2 === "Custom" && <div className="space-y-4 pt-2">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Target Address</label>
-                <input
-                  type="text"
-                  value={target}
-                  onChange={(e) => setTarget(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
-                  placeholder="0x..."
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Value (Wei)</label>
-                <input
-                  type="text"
-                  value={value}
-                  onChange={(e) => setValue(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-600 uppercase">Data (Hex)</label>
-                <textarea
-                  value={callData}
-                  onChange={(e) => setCallData(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm font-mono h-20 outline-none"
-                  placeholder="0x..."
-                />
-              </div>
-
-              <button
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors shadow-md disabled:opacity-50"
-                onClick={() => handleRequest(deployedAccount || newAccountAddress)}
-                disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
-              >
-                Request Transaction
-              </button>
-            </div>}
-          </div>
-        )}
-
-        {tab === 2 && <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Pending Transactions
-            </h3>
-            <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length} Action Required
-            </span>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.map((req, i) => (
-              <div
-                key={i}
-                className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
-              >
-                <div className="mb-2">
-                  <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                  <p className="text-[10px] font-mono text-slate-700 truncate">{req?.account}</p>
+            <div className="flex flex-col bg-white p-5 rounded-[20px] border-[1px] border-gray-200">
+              <div className="flex items-center justify-between w-full">
+                <div className="bg-[#ffedd5] h-[50px] w-[50px] rounded-2xl flex items-center justify-center">
+                  <FaClock className="text-[#ea580c] text-3xl" />
                 </div>
-
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-white p-2 rounded border border-slate-100">
-                    <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                    <p className="text-[10px] font-mono truncate">{req?.targetAddress}</p>
-                  </div>
-                  <div className="bg-white p-2 rounded border border-slate-100">
-                    <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                    <p className="text-[10px] font-mono">{req?.value}</p>
-                  </div>
+                <p className="bg-[rgba(255,255,255,0.2)] text-white py-1 px-5 rounded-[10px] w-fit font-bold">
+                  Active
+                </p>
+              </div>
+              <p className="text-[rgba(0,0,0,0.7)] mt-[1rem]">Pending Transaction</p>
+              <h2 className="text-[rgba(0,0,0,1)] font-bold text-3xl my-[0.2rem]">{myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length} Transactions</h2>
+              <p className="text-red-400">Required Signature</p>
+            </div>
+            <div className="flex flex-col bg-white p-5 rounded-[20px] border-[1px] border-gray-200">
+              <div className="flex items-center justify-between w-full">
+                <div className="bg-[#DCFCE7] h-[50px] w-[50px] rounded-2xl flex items-center justify-center">
+                  <FaSignature className="text-[#16A34A] text-3xl" />
                 </div>
+                <p className="bg-[rgba(255,255,255,0.2)] text-white py-1 px-5 rounded-[10px] w-fit font-bold">
+                  Active
+                </p>
+              </div>
+              <p className="text-[rgba(0,0,0,0.7)] mt-[1rem]">Wallet as Signer</p>
+              <h2 className="text-[rgba(0,0,0,1)] font-bold text-3xl my-[0.2rem]">3 Signers</h2>
+              <p className="text-[rgba(0,0,0,0.7)]">Connected wallet signer roles</p>
+            </div>
+          </div>
 
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] text-gray-600 italic">"{req?.reason || "No reason provided"}"</p>
-                    <p className="text-[9px] text-blue-500 font-semibold mt-1">
-                      Required: {req?.currentSignatures}/{req?.threshold} Signatures
-                    </p>
-                  </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-4 bg-white p-6 rounded-xl shadow-lg w-full border border-gray-100">
+              <h2 className="text-xl font-bold text-gray-800">Create Multi-Sig Account</h2>
 
-                  <button
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
-                    onClick={() => {
-                      handleSign(req.account, req.targetAddress, req.value, req.data, req.currentSignatures, req.threshold);
-                    }}
-                    disabled={req.signatures.some(
-                      (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-gray-700">Signer Addresses</label>
+                {signerAddresses?.map((signer, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="0x..."
+                      value={signer}
+                      onChange={(e) => updateSigner(index, e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                    {signerAddresses.length > 1 && (
+                      <button onClick={() => removeSignerField(index)} className="text-[#9333EA] ">
+                        <IoMdCloseCircleOutline size={24} />
+                      </button>
                     )}
-                  >
-                    {isLoadingSign ? "Signing..." : req.signatures.some(
-                      (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
-                    ) ? "Your Already Sign" : "Sign & Approve"}
-                  </button>
-                </div>
+                  </div>
+                ))}
+
+                <button
+                  onClick={addSignerField}
+                  className="flex items-center gap-1 text-sm text-[#9333EA] font-medium hover:underline"
+                >
+                  <IoMdAddCircleOutline size={18} /> Add Signer
+                </button>
               </div>
-            ))}
-          </div>
-        </div>}
 
-        {tab === 3 && <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Ready To Execute
-            </h3>
-            <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              {myRequests.filter(item => item.status.toLowerCase() === "ready").length} Action Required
-            </span>
-          </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700">Required Threshold</label>
+                <input
+                  type="number"
+                  min="1"
+                  max={signerAddresses.length}
+                  value={threshold}
+                  onChange={(e) => setThreshold(Number(e.target.value))}
+                  className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
+                />
+              </div>
 
-          <div className="flex flex-col gap-3">
-            {myRequests.filter(item => item.status.toLowerCase() === "ready")?.map((req, i) => (
-              <div
-                key={i}
-                className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+              <button
+                className="w-fit px-[30px] bg-[#9333EA] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                onClick={handleDeploy}
+                disabled={!isConnected || isLoading || !signerAddresses[0]}
               >
-                <div className="mb-2">
-                  <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                  <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
+                {isLoading ? "Processing..." : <span className="flex items-center justify-center gap-2"><FaPaperPlane /> Create Account</span>}
+              </button>
+
+            </div>
+
+            <div className="flex flex-col gap-4 bg-white p-6 rounded-xl shadow-lg w-full border border-gray-100">
+              <h2 className="text-xl font-bold text-gray-800">Create New Transaction</h2>
+              <div className="w-full flex items-center justify-start border-b-[1px]">
+                <button
+                  className="pb-[10px] px-[20px] flex items-center justify-center gap-2"
+                  style={
+                    value2 === "Transfer"
+                      ? { borderBottom: "2px solid #9333EA", color: "#9333EA" }
+                      : undefined
+                  }
+                  onClick={() => setValue2("Transfer")}
+                >
+                  <FaPaperPlane />
+                  Transfer
+                </button>
+
+                <button
+                  className="pb-[10px] px-[20px] flex items-center justify-center gap-2"
+                  style={
+                    value2 === "Approve"
+                      ? { borderBottom: "2px solid #9333EA", color: "#9333EA" }
+                      : undefined
+                  }
+                  onClick={() => setValue2("Approve")}
+                >
+                  <FaCheck />
+                  Approve
+                </button>
+
+                <button
+                  className="pb-[10px] px-[20px] flex items-center justify-center gap-2"
+                  style={
+                    value2 === "Custom"
+                      ? { borderBottom: "2px solid #9333EA", color: "#9333EA" }
+                      : undefined
+                  }
+                  onClick={() => setValue2("Custom")}
+                >
+                  <FaCode className="text-lg" />
+                  Custom
+                </button>
+              </div>
+
+
+              {value2 === "Transfer" && <div className="space-y-4 pt-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-600 uppercase">Transaction Type</label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <button style={transferType === "eth" ? { borderColor: "#7E22CE", backgroundColor: "#FAF5FF", color: "#7E22CE" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
+                      setTransferType("eth");
+                    }}><FaEthereum /> ETH</button>
+                    <button style={transferType === "erc20" ? { borderColor: "#7E22CE", backgroundColor: "#FAF5FF", color: "#7E22CE" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
+                      setTransferType("erc20");
+                      setValue("0");
+                      setCallData("");
+                    }}><FaCoins /> Token</button>
+                    <button style={transferType === "nft" ? { borderColor: "#7E22CE", backgroundColor: "#FAF5FF", color: "#7E22CE" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
+                      setTransferType("nft");
+                      setValue("0");
+                      setCallData("");
+                    }}><FaImage /> NFT</button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 !gap-x-5 !gap-y-2">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">{transferType === "eth" ? "Receiver Address" : transferType === "erc20" ? "Token Address" : "NFT Address"}</label>
+                    <input
+                      type="text"
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="0x..."
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Amount (ETH)</label>
+                    <input
+                      type="text"
+                      value={value}
+                      onChange={(e) => {
+                        setValue(e.target.value);
+                      }}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
+                      placeholder="0"
+                      disabled={transferType === "erc20" || transferType === "nft"}
+                    />
+                  </div>
+
+                  {(transferType === "erc20" || transferType === "nft") && <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Receiver Address</label>
+                    <input
+                      type="text"
+                      value={tokenReceiver}
+                      onChange={(e) => setTokenReceiver(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="0x..."
+                    />
+                  </div>}
+
+                  {(transferType === "erc20") && <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Amount (ETH)</label>
+                    <input
+                      type="number"
+                      value={tokenAmount}
+                      onChange={(e) => setTokenAmount(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="0x..."
+                    />
+                  </div>}
+
+                  {(transferType === "nft") && <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Token ID</label>
+                    <input
+                      type="number"
+                      value={tokenId}
+                      onChange={(e) => setTokenId(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="0x..."
+                    />
+                  </div>}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="bg-white p-2 rounded border border-slate-100">
-                    <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                    <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
+                <button
+                  className="w-fit px-[30px] bg-[#9333EA] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                  onClick={() => handleRequest(deployedAccount || newAccountAddress, transferType)}
+                  disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
+                >
+                  <FaPaperPlane /> Create Transaction
+                </button>
+              </div>}
+              {value2 === "Approve" && <div className="space-y-4 pt-2">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-600 uppercase">Transaction Type</label>
+                  <div className="grid grid-cols-3 gap-4">
+                    <button style={approveType === "approve-erc20" ? { borderColor: "#7E22CE", backgroundColor: "#FAF5FF", color: "#7E22CE" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
+                      setApproveType("approve-erc20");
+                      setValue("0");
+                      setCallData("");
+                    }}><FaCoins /> Token</button>
+                    <button style={approveType === "approve-nft" ? { borderColor: "#7E22CE", backgroundColor: "#FAF5FF", color: "#7E22CE" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
+                      setApproveType("approve-nft");
+                      setValue("0");
+                      setCallData("");
+                    }}><FaImage /> NFT</button>
                   </div>
-                  <div className="bg-white p-2 rounded border border-slate-100">
-                    <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                    <p className="text-[10px] font-mono">{req.value} Wei</p>
+                </div>
+                <div className="grid grid-cols-2 !gap-x-5 !gap-y-2">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Token Address</label>
+                    <input
+                      type="text"
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="0x..."
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Spender Address</label>
+                    <input
+                      type="text"
+                      value={approveSpender}
+                      onChange={(e) => setApproveSpender(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  {approveType === "approve-erc20" && <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Amount (ETH)</label>
+                    <input
+                      type="number"
+                      value={approveAmount}
+                      onChange={(e) => setApproveAmount(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
+                      placeholder="0"
+                    />
+                  </div>}
+
+                  {approveType === "approve-nft" && <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Token ID</label>
+                    <input
+                      type="number"
+                      value={approveTokenId}
+                      onChange={(e) => setApproveTokenId(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
+                      placeholder="0"
+                    />
+                  </div>}
+                </div>
+
+                <button
+                  className="w-fit px-[30px] bg-[#9333EA] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                  onClick={() => handleRequest(deployedAccount || newAccountAddress, approveType)}
+                  disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
+                >
+                  <FaPaperPlane /> Create Transaction
+                </button>
+              </div>}
+              {value2 === "Custom" && <div className="space-y-4 pt-2">
+                <div className="grid grid-cols-2 !gap-x-5 !gap-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Target Address</label>
+                    <input
+                      type="text"
+                      value={target}
+                      onChange={(e) => setTarget(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      placeholder="0x..."
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Value (ETH)</label>
+                    <input
+                      type="text"
+                      value={value}
+                      onChange={(e) => setValue(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-xs font-bold text-gray-600 uppercase">Data (Hex)</label>
+                    <textarea
+                      value={callData}
+                      onChange={(e) => setCallData(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm font-mono h-20 outline-none"
+                      placeholder="0x..."
+                    />
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
-                    <p className="text-[9px] text-blue-500 font-semibold mt-1">
-                      Required: {req.currentSignatures}/{req.threshold} Signatures
-                    </p>
-                  </div>
+                <button
+                  className="w-fit px-[30px] bg-[#9333EA] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                  onClick={() => handleRequest(deployedAccount || newAccountAddress)}
+                  disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
+                >
+                  <FaPaperPlane /> Create Transaction
+                </button>
+              </div>}
+            </div>
+          </div>
 
-                  <button
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
-                    onClick={() => {
-                      handleExecute(req)
-                    }}
-                  >
-                    {isLoadingExecute ? "Executing..." : "Execute"}
-                  </button>
-                </div>
+          <div className="grid grid-cols-2 gap-4">
+            {signerFor?.map((acc, i) => (
+              <div className="bg-white flex items-center justify-between p-4 gap-4 rounded-[15px] ">
+                <p>{acc}</p>
               </div>
             ))}
           </div>
-        </div>}
 
-        {tab === 4 && <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Executed Transactions
-            </h3>
-          </div>
+          <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Pending Transactions
+              </h3>
+              <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length} Action Required
+              </span>
+            </div>
 
-          <div className="flex flex-col gap-3">
-            {Object.entries(executedHistory)?.map(([account, transactions]) => {
-              const txArray = Array.isArray(transactions) ? transactions : [];
-
-              return txArray?.map((tx, idx) => (
+            <div className="flex flex-col gap-3">
+              {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.map((req, i) => (
                 <div
-                  key={idx}
+                  key={i}
                   className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
                 >
                   <div className="mb-2">
                     <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                    <p className="text-[10px] font-mono text-slate-700 truncate">{tx.account}</p>
+                    <p className="text-[10px] font-mono text-slate-700 truncate">{req?.account}</p>
                   </div>
+
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="bg-white p-2 rounded border border-slate-100">
                       <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                      <p className="text-[10px] font-mono truncate">{tx.targetAddress}</p>
+                      <p className="text-[10px] font-mono truncate">{req?.targetAddress}</p>
                     </div>
                     <div className="bg-white p-2 rounded border border-slate-100">
                       <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                      <p className="text-[10px] font-mono">{tx.value} Wei</p>
+                      <p className="text-[10px] font-mono">{req?.value}</p>
                     </div>
                   </div>
-                </div>
-              ))
-            })}
-          </div>
-        </div>}
 
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] text-gray-600 italic">"{req?.reason || "No reason provided"}"</p>
+                      <p className="text-[9px] text-blue-500 font-semibold mt-1">
+                        Required: {req?.currentSignatures}/{req?.threshold} Signatures
+                      </p>
+                    </div>
+
+                    <button
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
+                      onClick={() => {
+                        handleSign(req.account, req.targetAddress, req.value, req.data, req.currentSignatures, req.threshold);
+                      }}
+                      disabled={req.signatures.some(
+                        (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
+                      )}
+                    >
+                      {isLoadingSign ? "Signing..." : req.signatures.some(
+                        (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
+                      ) ? "Your Already Sign" : "Sign & Approve"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Ready To Execute
+              </h3>
+              <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                {myRequests.filter(item => item.status.toLowerCase() === "ready").length} Action Required
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {myRequests.filter(item => item.status.toLowerCase() === "ready")?.map((req, i) => (
+                <div
+                  key={i}
+                  className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+                >
+                  <div className="mb-2">
+                    <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
+                    <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-white p-2 rounded border border-slate-100">
+                      <p className="text-[9px] text-gray-400 font-bold">Target</p>
+                      <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
+                    </div>
+                    <div className="bg-white p-2 rounded border border-slate-100">
+                      <p className="text-[9px] text-gray-400 font-bold">Value</p>
+                      <p className="text-[10px] font-mono">{req.value} Wei</p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
+                      <p className="text-[9px] text-blue-500 font-semibold mt-1">
+                        Required: {req.currentSignatures}/{req.threshold} Signatures
+                      </p>
+                    </div>
+
+                    <button
+                      className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
+                      onClick={() => {
+                        handleExecute(req)
+                      }}
+                    >
+                      {isLoadingExecute ? "Executing..." : "Execute"}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                Executed Transactions
+              </h3>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {Object.entries(executedHistory)?.map(([account, transactions]) => {
+                const txArray = Array.isArray(transactions) ? transactions : [];
+
+                return txArray?.map((tx, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+                  >
+                    <div className="mb-2">
+                      <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
+                      <p className="text-[10px] font-mono text-slate-700 truncate">{tx.account}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="bg-white p-2 rounded border border-slate-100">
+                        <p className="text-[9px] text-gray-400 font-bold">Target</p>
+                        <p className="text-[10px] font-mono truncate">{tx.targetAddress}</p>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-slate-100">
+                        <p className="text-[9px] text-gray-400 font-bold">Value</p>
+                        <p className="text-[10px] font-mono">{tx.value} Wei</p>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              })}
+            </div>
+          </div>
+
+        </div>
       </div>
+
     </div>
   );
 }

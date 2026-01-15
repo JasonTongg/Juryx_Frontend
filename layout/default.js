@@ -17,7 +17,7 @@ export default function Default({ children }) {
   return (
     <main className="flex flex-col items-center justify-between w-full min-h-screen overflow-x-hidden relative">
       <ToastContainer />
-      <Navbar />
+      {/* <Navbar /> */}
       {children}
       <Footer />
     </main>

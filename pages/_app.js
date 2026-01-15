@@ -84,8 +84,8 @@ const customTheme = {
     connectButton: "",
     dialog: "0px 10px 20px rgba(0, 0, 0, 0.3)",
     profileDetailsAction: "0px 2px 5px rgba(0, 0, 0, 0.2)",
-    selectedOption: "0px 0px 6px rgba(255, 0, 122, 0.6)",
-    selectedWallet: "0px 0px 10px rgba(255, 0, 122, 0.8)",
+    selectedOption: "0px 0px 6px rgba(82, 69, 229, 0.6)",
+    selectedWallet: "0px 0px 10px rgba(82, 69, 229, 0.8)",
     walletLogo: "0px 2px 4px rgba(0, 0, 0, 0.2)",
   },
 };
