@@ -753,7 +753,7 @@ export default function Hero() {
           </div>
         </div>
         <div className="bg-[#f7f7f7] flex p-8 flex-col gap-4 ">
-          {(deployedAccount || newAccountAddress) && <div className="break-all bg-[rgba(255,255,255,1)] border-[1px] rounded-[1000px] flex items-center justify-start gap-3 w-fit overflow-hidden pr-5">
+          {(deployedAccount || newAccountAddress) && <div className="shadow-md break-all bg-[rgba(255,255,255,1)] border-[1px] rounded-[1000px] flex items-center justify-start gap-3 w-fit overflow-hidden pr-5">
             <div className="bg-gradient-to-br from-[#9134EA] to-[#305EEB] text-white py-2 pl-5 pr-4 border-r-[1px]">
               <FaWallet />
             </div>
@@ -764,7 +764,7 @@ export default function Hero() {
             }} />
           </div>}
           <div className="grid grid-cols-3 gap-4">
-            <div className="flex flex-col bg-gradient-to-br from-[#9134EA] to-[#305EEB] p-5 rounded-[20px]">
+            <div className="shadow-md flex flex-col bg-gradient-to-br from-[#9134EA] to-[#305EEB] p-5 rounded-[20px]">
               <div className="flex items-center justify-between w-full">
                 <div className="bg-[rgba(255,255,255,0.2)] h-[50px] w-[50px] rounded-2xl flex items-center justify-center">
                   <PiPiggyBankFill className="text-white text-3xl" />
@@ -777,7 +777,7 @@ export default function Hero() {
               <h2 className="text-[rgba(255,255,255,1)] font-bold text-3xl my-[0.2rem]">34.5 ETH</h2>
               <p className="text-[rgba(255,255,255,0.7)]">=$4.300.000 USD</p>
             </div>
-            <div className="flex flex-col bg-white p-5 rounded-[20px] border-[1px] border-gray-200">
+            <div className="shadow-md flex flex-col bg-white p-5 rounded-[20px] border-[1px] border-gray-200">
               <div className="flex items-center justify-between w-full">
                 <div className="bg-[#ffedd5] h-[50px] w-[50px] rounded-2xl flex items-center justify-center">
                   <FaClock className="text-[#ea580c] text-3xl" />
@@ -790,7 +790,7 @@ export default function Hero() {
               <h2 className="text-[rgba(0,0,0,1)] font-bold text-3xl my-[0.2rem]">{myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length} Transactions</h2>
               <p className="text-red-400">Required Signature</p>
             </div>
-            <div className="flex flex-col bg-white p-5 rounded-[20px] border-[1px] border-gray-200">
+            <div className="shadow-md flex flex-col bg-white p-5 rounded-[20px] border-[1px] border-gray-200">
               <div className="flex items-center justify-between w-full">
                 <div className="bg-[#DCFCE7] h-[50px] w-[50px] rounded-2xl flex items-center justify-center">
                   <FaSignature className="text-[#16A34A] text-3xl" />
@@ -1105,160 +1105,173 @@ export default function Hero() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="flex flex-col p-4 bg-white shadow-md border-[1px] rounded-[15px]">
+            <h2 className="text-xl font-bold">Wallet as Signer</h2>
+            <p className="text-[rgba(0,0,0,0.5)] mt-[0.4rem] mb-[1rem]">Connected wallet signer roles</p>
             {signerFor?.map((acc, i) => (
-              <div className="bg-white flex items-center justify-between p-4 gap-4 rounded-[15px] ">
-                <p>{acc}</p>
+              <div className=" flex items-center justify-between gap-4 rounded-[15px] border-[1px] py-3 px-4 w-full bg-[#FAF5FF]">
+                <div className="flex items-center justify-start gap-4 ">
+                  <div className="bg-gradient-to-br from-[#9134EA] to-[#305EEB] text-white w-[35px] h-[35px] flex items-center justify-center rounded-[10px]">
+                    <FaWallet></FaWallet>
+                  </div>
+                  <p>{acc}</p>
+                </div>
+                <div className="text-white py-1 px-3 rounded-[15px] bg-[#9333EA]">
+                  Active
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Pending Transactions
-              </h3>
-              <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length} Action Required
-              </span>
-            </div>
+          <div className="grid grid-cols-3 gap-5">
+            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold  uppercase tracking-wider flex items-center justify-center text-base gap-2">
+                  <FaClock className="text-orange-600" /> Pending
+                </h3>
+                <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full text-lg">
+                  {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length}
+                </span>
+              </div>
 
-            <div className="flex flex-col gap-3">
-              {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.map((req, i) => (
-                <div
-                  key={i}
-                  className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
-                >
-                  <div className="mb-2">
-                    <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                    <p className="text-[10px] font-mono text-slate-700 truncate">{req?.account}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <div className="bg-white p-2 rounded border border-slate-100">
-                      <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                      <p className="text-[10px] font-mono truncate">{req?.targetAddress}</p>
-                    </div>
-                    <div className="bg-white p-2 rounded border border-slate-100">
-                      <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                      <p className="text-[10px] font-mono">{req?.value}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] text-gray-600 italic">"{req?.reason || "No reason provided"}"</p>
-                      <p className="text-[9px] text-blue-500 font-semibold mt-1">
-                        Required: {req?.currentSignatures}/{req?.threshold} Signatures
-                      </p>
-                    </div>
-
-                    <button
-                      className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
-                      onClick={() => {
-                        handleSign(req.account, req.targetAddress, req.value, req.data, req.currentSignatures, req.threshold);
-                      }}
-                      disabled={req.signatures.some(
-                        (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
-                      )}
-                    >
-                      {isLoadingSign ? "Signing..." : req.signatures.some(
-                        (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
-                      ) ? "Your Already Sign" : "Sign & Approve"}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Ready To Execute
-              </h3>
-              <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                {myRequests.filter(item => item.status.toLowerCase() === "ready").length} Action Required
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {myRequests.filter(item => item.status.toLowerCase() === "ready")?.map((req, i) => (
-                <div
-                  key={i}
-                  className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
-                >
-                  <div className="mb-2">
-                    <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                    <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <div className="bg-white p-2 rounded border border-slate-100">
-                      <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                      <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
-                    </div>
-                    <div className="bg-white p-2 rounded border border-slate-100">
-                      <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                      <p className="text-[10px] font-mono">{req.value} Wei</p>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
-                      <p className="text-[9px] text-blue-500 font-semibold mt-1">
-                        Required: {req.currentSignatures}/{req.threshold} Signatures
-                      </p>
-                    </div>
-
-                    <button
-                      className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
-                      onClick={() => {
-                        handleExecute(req)
-                      }}
-                    >
-                      {isLoadingExecute ? "Executing..." : "Execute"}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="w-full max-w-md bg-white p-4 rounded-xl shadow-lg border border-gray-100">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                Executed Transactions
-              </h3>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {Object.entries(executedHistory)?.map(([account, transactions]) => {
-                const txArray = Array.isArray(transactions) ? transactions : [];
-
-                return txArray?.map((tx, idx) => (
+              <div className="flex flex-col gap-3">
+                {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.map((req, i) => (
                   <div
-                    key={idx}
+                    key={i}
                     className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
                   >
                     <div className="mb-2">
                       <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                      <p className="text-[10px] font-mono text-slate-700 truncate">{tx.account}</p>
+                      <p className="text-[10px] font-mono text-slate-700 truncate">{req?.account}</p>
                     </div>
+
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="bg-white p-2 rounded border border-slate-100">
                         <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                        <p className="text-[10px] font-mono truncate">{tx.targetAddress}</p>
+                        <p className="text-[10px] font-mono truncate">{req?.targetAddress}</p>
                       </div>
                       <div className="bg-white p-2 rounded border border-slate-100">
                         <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                        <p className="text-[10px] font-mono">{tx.value} Wei</p>
+                        <p className="text-[10px] font-mono">{req?.value}</p>
                       </div>
                     </div>
+
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-[10px] text-gray-600 italic">"{req?.reason || "No reason provided"}"</p>
+                        <p className="text-[9px] text-blue-500 font-semibold mt-1">
+                          Required: {req?.currentSignatures}/{req?.threshold} Signatures
+                        </p>
+                      </div>
+
+                      <button
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
+                        onClick={() => {
+                          handleSign(req.account, req.targetAddress, req.value, req.data, req.currentSignatures, req.threshold);
+                        }}
+                        disabled={req.signatures.some(
+                          (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
+                        )}
+                      >
+                        {isLoadingSign ? "Signing..." : req.signatures.some(
+                          (item) => item.signerAddress.toLowerCase() === address?.toLowerCase()
+                        ) ? "Your Already Sign" : "Sign & Approve"}
+                      </button>
+                    </div>
                   </div>
-                ))
-              })}
+                ))}
+              </div>
+            </div>
+
+            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-gray-500 uppercase tracking-wider flex items-center justify-start gap-2">
+                  <FaCheckCircle className="text-green-600" /> Ready
+                </h3>
+                <span className="bg-green-200 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full text-lg">
+                  {myRequests.filter(item => item.status.toLowerCase() === "ready").length}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {myRequests.filter(item => item.status.toLowerCase() === "ready")?.map((req, i) => (
+                  <div
+                    key={i}
+                    className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+                  >
+                    <div className="mb-2">
+                      <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
+                      <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <div className="bg-white p-2 rounded border border-slate-100">
+                        <p className="text-[9px] text-gray-400 font-bold">Target</p>
+                        <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
+                      </div>
+                      <div className="bg-white p-2 rounded border border-slate-100">
+                        <p className="text-[9px] text-gray-400 font-bold">Value</p>
+                        <p className="text-[10px] font-mono">{req.value} Wei</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
+                        <p className="text-[9px] text-blue-500 font-semibold mt-1">
+                          Required: {req.currentSignatures}/{req.threshold} Signatures
+                        </p>
+                      </div>
+
+                      <button
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
+                        onClick={() => {
+                          handleExecute(req)
+                        }}
+                      >
+                        {isLoadingExecute ? "Executing..." : "Execute"}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-gray-500 uppercase tracking-wider flex items-center justify-start gap-2">
+                  <FaCheckCircle className="text-blue-600" /> Executed
+                </h3>
+                <p className="text-blue-600">View All</p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {Object.entries(executedHistory)?.map(([account, transactions]) => {
+                  const txArray = Array.isArray(transactions) ? transactions : [];
+
+                  return txArray?.map((tx, idx) => (
+                    <div
+                      key={idx}
+                      className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+                    >
+                      <div className="mb-2">
+                        <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
+                        <p className="text-[10px] font-mono text-slate-700 truncate">{tx.account}</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div className="bg-white p-2 rounded border border-slate-100">
+                          <p className="text-[9px] text-gray-400 font-bold">Target</p>
+                          <p className="text-[10px] font-mono truncate">{tx.targetAddress}</p>
+                        </div>
+                        <div className="bg-white p-2 rounded border border-slate-100">
+                          <p className="text-[9px] text-gray-400 font-bold">Value</p>
+                          <p className="text-[10px] font-mono">{tx.value} Wei</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                })}
+              </div>
             </div>
           </div>
 
