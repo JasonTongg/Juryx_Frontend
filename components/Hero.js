@@ -95,7 +95,7 @@ export default function Hero() {
   const { address, isConnected } = useAccount();
   const { abi, factoryByteCode } = useSelector((state) => state.data);
   const { signMessageAsync } = useSignMessage();
-
+  
   // State for dynamic signers and threshold
   const [signerAddresses, setSignerAddresses] = useState([""]);
   const [threshold, setThreshold] = useState(1);
@@ -184,6 +184,8 @@ export default function Hero() {
             args: [validSigners, BigInt(threshold), ENTRY_POINT_ADDRESS],
           });
         } catch (error) {
+          console.log("create account")
+          console.log(error)
           setIsLoading(false);
           const message =
             error?.shortMessage ||
@@ -209,6 +211,10 @@ export default function Hero() {
   /* ---------------- Handlers ---------------- */
   const handleDeploy = async () => {
     if (!address || !factoryByteCode) return;
+    if(deployedAccount || newAccountAddress) {
+      toast.dark("Account already deployed");
+      return;
+    }
     setIsLoading(true);
     accountCreatedRef.current = false;
 
@@ -220,6 +226,7 @@ export default function Hero() {
         args: [],
       });
     } catch (error) {
+      console.log(message)
       const message =
         error?.shortMessage ||
         error?.message ||
@@ -270,7 +277,7 @@ export default function Hero() {
         value: "0",
         data: calldata2,
         reason: "Token Transfer",
-        note: "ERC20 Transfer Request"
+        note: "Token Transfer Request"
       };
     }
     else if (type === "nft") {
@@ -286,7 +293,7 @@ export default function Hero() {
         value: "0",
         data: calldata3,
         reason: "NFT Transfer",
-        note: "ERC721 Transfer Request"
+        note: "NFT Transfer Request"
       };
     }
     else if (type === "approve-erc20") {
@@ -301,8 +308,8 @@ export default function Hero() {
         target: target,
         value: "0",
         data: calldata4,
-        reason: "ERC20 Approve",
-        note: "ERC20 Approve Request"
+        reason: "Token Approve",
+        note: "Token Approve Request"
       };
     }
     else if (type === "approve-nft") {
@@ -316,8 +323,8 @@ export default function Hero() {
         target: target,
         value: "0",
         data: calldata4,
-        reason: "ERC20 Approve",
-        note: "ERC20 Approve Request"
+        reason: "NFT Approve",
+        note: "NFT Approve Request"
       };
     }
     else {
@@ -326,8 +333,8 @@ export default function Hero() {
         target: target,
         value: value,
         data: callData,
-        reason: "ETH Transfer",
-        note: "ETH Transfer Request"
+        reason: callData.length > 0 ? "Custom Transaction" : "ETH Transfer",
+        note: callData.length > 0 ? "Custom Transaction Request" : "ETH Transfer Request"
       };
     }
 
@@ -725,7 +732,8 @@ export default function Hero() {
       }
     });
   }
-
+  
+  const { data: balance } = useBalance({address: deployedAccount || newAccountAddress});
 
   return (
     <div className="w-full grid" style={{ gridTemplateColumns: "270px 1fr", minHeight: "calc(100vh - 110px)" }}>
@@ -748,7 +756,6 @@ export default function Hero() {
             <p className="text-gray-500">Manage your secure multi-sig wallet</p>
           </div>
           <div>
-            {!(deployedAccount || newAccountAddress) && <button onClick={() => setTab(5)} className="w-fit shadow-md shadow-[#5245e58c] bg-gradient-to-br from-[#5245e5] to-[#9134ea] text-white px-6 py-2 rounded-[10px] flex items-center justify-center gap-3"><FaPlus /> Create New Wallet</button>}
             <ConnectButton />
           </div>
         </div>
@@ -774,7 +781,7 @@ export default function Hero() {
                 </p>
               </div>
               <p className="text-[rgba(255,255,255,0.7)] mt-[1rem]">Wallet Balance</p>
-              <h2 className="text-[rgba(255,255,255,1)] font-bold text-3xl my-[0.2rem]">34.5 ETH</h2>
+              <h2 className="text-[rgba(255,255,255,1)] font-bold text-3xl my-[0.2rem]">{balance?.formatted} ETH</h2>
               <p className="text-[rgba(255,255,255,0.7)]">=$4.300.000 USD</p>
             </div>
             <div className="shadow-md flex flex-col bg-white p-5 rounded-[20px] border-[1px] border-gray-200">
@@ -800,7 +807,7 @@ export default function Hero() {
                 </p>
               </div>
               <p className="text-[rgba(0,0,0,0.7)] mt-[1rem]">Wallet as Signer</p>
-              <h2 className="text-[rgba(0,0,0,1)] font-bold text-3xl my-[0.2rem]">3 Signers</h2>
+              <h2 className="text-[rgba(0,0,0,1)] font-bold text-3xl my-[0.2rem]">{signerFor.length} Signers</h2>
               <p className="text-[rgba(0,0,0,0.7)]">Connected wallet signer roles</p>
             </div>
           </div>
@@ -1124,7 +1131,7 @@ export default function Hero() {
           </div>
 
           <div className="grid grid-cols-3 gap-5">
-            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100 ">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold  uppercase tracking-wider flex items-center justify-center text-base gap-2">
                   <FaClock className="text-orange-600" /> Pending
@@ -1134,38 +1141,53 @@ export default function Hero() {
                 </span>
               </div>
 
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
                 {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.map((req, i) => (
                   <div
                     key={i}
-                    className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+                    className="p-3 rounded-lg border transition-colors border-[#FED7AA] bg-[#FFF7ED]"
                   >
-                    <div className="mb-2">
-                      <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                      <p className="text-[10px] font-mono text-slate-700 truncate">{req?.account}</p>
+                    <div>
+                      <p className="bg-[#FFEDD5] text-[#C2410C] w-fit px-2 py-1 rounded-[5px] text-[10px] font-bold uppercase">{req?.reason}</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="bg-white p-2 rounded border border-slate-100">
+                    <div className="grid grid-cols-1 gap-2 mb-1 mt-2">
+                      <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#fadebe]">
+                        <p className="text-[9px] text-gray-400 font-bold">Smart Account</p>
+                        <p className="text-[10px] font-mono truncate">{req?.account}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 mb-1">
+                      <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#fadebe]">
                         <p className="text-[9px] text-gray-400 font-bold">Target</p>
                         <p className="text-[10px] font-mono truncate">{req?.targetAddress}</p>
                       </div>
-                      <div className="bg-white p-2 rounded border border-slate-100">
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 mb-1">
+                      <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#fadebe]">
                         <p className="text-[9px] text-gray-400 font-bold">Value</p>
                         <p className="text-[10px] font-mono">{req?.value}</p>
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-1 gap-2 mb-2 ">
+                      <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#fadebe]">
+                        <p className="text-[9px] text-gray-400 font-bold">Calldata</p>
+                        <p className="text-[10px] font-mono">{req?.data}</p>
+                      </div>
+                    </div>
+
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-[10px] text-gray-600 italic">"{req?.reason || "No reason provided"}"</p>
-                        <p className="text-[9px] text-blue-500 font-semibold mt-1">
+                        <p className="text-[9px] text-orange-600 font-semibold mt-1">
                           Required: {req?.currentSignatures}/{req?.threshold} Signatures
                         </p>
                       </div>
 
                       <button
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
+                        className="bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
                         onClick={() => {
                           handleSign(req.account, req.targetAddress, req.value, req.data, req.currentSignatures, req.threshold);
                         }}
@@ -1193,47 +1215,63 @@ export default function Hero() {
                 </span>
               </div>
 
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
                 {myRequests.filter(item => item.status.toLowerCase() === "ready")?.map((req, i) => (
                   <div
-                    key={i}
-                    className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
-                  >
-                    <div className="mb-2">
-                      <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                      <p className="text-[10px] font-mono text-slate-700 truncate">{req.account}</p>
+                  key={i}
+                  className="p-3 rounded-lg border transition-colors border-[#BBF7D0] bg-[#F0FDF4]"
+                >
+                  <div>
+                    <p className="bg-[#DCFCE7] text-green-600 w-fit px-2 py-1 rounded-[5px] text-[10px] font-bold uppercase">{req?.reason}</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 mb-1 mt-2">
+                    <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
+                      <p className="text-[9px] text-gray-400 font-bold">Smart Account</p>
+                      <p className="text-[10px] font-mono truncate">{req?.account}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 mb-1">
+                    <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
+                      <p className="text-[9px] text-gray-400 font-bold">Target</p>
+                      <p className="text-[10px] font-mono truncate">{req?.targetAddress}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 mb-1">
+                    <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
+                      <p className="text-[9px] text-gray-400 font-bold">Value</p>
+                      <p className="text-[10px] font-mono">{req?.value}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-2 mb-2 ">
+                    <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
+                      <p className="text-[9px] text-gray-400 font-bold">Calldata</p>
+                      <p className="text-[10px] font-mono">{req?.data}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-[9px] text-green-600 font-semibold mt-1">
+                        Required: {req?.currentSignatures}/{req?.threshold} Signatures
+                      </p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 mb-3">
-                      <div className="bg-white p-2 rounded border border-slate-100">
-                        <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                        <p className="text-[10px] font-mono truncate">{req.targetAddress}</p>
-                      </div>
-                      <div className="bg-white p-2 rounded border border-slate-100">
-                        <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                        <p className="text-[10px] font-mono">{req.value} Wei</p>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-[10px] text-gray-600 italic">"{req.reason || "No reason provided"}"</p>
-                        <p className="text-[9px] text-blue-500 font-semibold mt-1">
-                          Required: {req.currentSignatures}/{req.threshold} Signatures
-                        </p>
-                      </div>
-
-                      <button
-                        className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
+                    <button
+                        className="bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
                         onClick={() => {
                           handleExecute(req)
                         }}
                       >
                         {isLoadingExecute ? "Executing..." : "Execute"}
                       </button>
-                    </div>
                   </div>
+                </div>
                 ))}
+
               </div>
             </div>
 
@@ -1245,27 +1283,40 @@ export default function Hero() {
                 <p className="text-blue-600">View All</p>
               </div>
 
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
                 {Object.entries(executedHistory)?.map(([account, transactions]) => {
                   const txArray = Array.isArray(transactions) ? transactions : [];
 
                   return txArray?.map((tx, idx) => (
                     <div
                       key={idx}
-                      className="p-3 bg-slate-50 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+                      className="p-3 bg-blue-50 rounded-lg border border-blue-200 transition-colors"
                     >
-                      <div className="mb-2">
-                        <p className="text-[9px] text-gray-400 font-bold uppercase">From Smart Account</p>
-                        <p className="text-[10px] font-mono text-slate-700 truncate">{tx.account}</p>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2 mb-3">
-                        <div className="bg-white p-2 rounded border border-slate-100">
-                          <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                          <p className="text-[10px] font-mono truncate">{tx.targetAddress}</p>
+                      <div className="grid grid-cols-1 gap-2 mb-1 mt-2">
+                        <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-blue-100">
+                          <p className="text-[9px] text-gray-400 font-bold">Smart Account</p>
+                          <p className="text-[10px] font-mono truncate">{account}</p>
                         </div>
-                        <div className="bg-white p-2 rounded border border-slate-100">
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2 mb-1">
+                        <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-blue-100">
+                          <p className="text-[9px] text-gray-400 font-bold">Target</p>
+                          <p className="text-[10px] font-mono truncate">{tx?.targetAddress}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2 mb-1">
+                        <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-blue-100">
                           <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                          <p className="text-[10px] font-mono">{tx.value} Wei</p>
+                          <p className="text-[10px] font-mono">{tx?.value}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-2 mb-2 ">
+                        <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-blue-100">
+                          <p className="text-[9px] text-gray-400 font-bold">Calldata</p>
+                          <p className="text-[10px] font-mono">{tx?.data}</p>
                         </div>
                       </div>
                     </div>
