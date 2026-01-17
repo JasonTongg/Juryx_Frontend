@@ -33,6 +33,7 @@ import { IoCopy } from "react-icons/io5";
 import { FaCheck } from "react-icons/fa";
 import { FaCode } from "react-icons/fa";
 import { FaEthereum, FaImage, FaCoins } from "react-icons/fa6";
+import Link from "next/link";
 
 const ERC20_TRANSFER_ABI = [
   {
@@ -213,7 +214,6 @@ export default function Hero() {
     if (!address || !factoryByteCode) return;
     if(deployedAccount || newAccountAddress) {
       toast.dark("Account already deployed");
-      return;
     }
     setIsLoading(true);
     accountCreatedRef.current = false;
@@ -736,41 +736,44 @@ export default function Hero() {
   const { data: balance } = useBalance({address: deployedAccount || newAccountAddress});
 
   return (
-    <div className="w-full grid" style={{ gridTemplateColumns: "270px 1fr", minHeight: "calc(100vh - 110px)" }}>
-      <div className="w-full bg-white  flex flex-col items-center border-r-[1px] border-gray-100">
+    <div className="w-full grid grid-style" style={{ minHeight: "calc(100vh - 110px)" }}>
+      <div className="w-full bg-white hidden lg:flex flex-col items-center border-r-[1px] border-gray-100">
         <div className="border-b-[1px] border-gray-200 w-full p-4 py-[24px]">
           <Image src={Logo} className="w-[180px] mx-auto" />
         </div>
         <div className="flex flex-col items-start justify-center w-full gap-1 p-4">
-          <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 0 ? { color: "#8F35EA", backgroundColor: "#FAF5FF" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(0)}><FaWallet /> My Wallets</button>
-          <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 1 ? { color: "#5245e5", backgroundColor: "#eef2ff" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(1)}><FaPaperPlane /> New Transaction</button>
-          <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 2 ? { color: "#ea580c", backgroundColor: "#ffedd5" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(2)}><FaRegClock /> Pending <div className="bg-[#ffedd5] text-[#ea580c] font-bold w-[25px] h-[25px] flex items-center justify-center rounded-[30px]">{myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length}</div></button>
-          <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 3 ? { color: "#16A34A", backgroundColor: "#DCFCE7" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(3)}><FaCheckCircle /> Ready to Execute <div className="bg-[#DCFCE7] text-[#16A34A] font-bold w-[25px] h-[25px] flex items-center justify-center rounded-[30px]">{myRequests.filter(item => item.status.toLowerCase() === "ready").length}</div></button>
-          <button className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 4 ? { color: "#ea0c0c", backgroundColor: "#ffd5d5" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(4)}><FaCheckDouble /> Executed </button>
+          <Link className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 0 ? { color: "#5245e5", backgroundColor: "#eef2ff" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(0)} href="#wallet"><FaWallet /> My Wallets</Link>
+          <Link className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 1 ? { color: "#5245e5", backgroundColor: "#eef2ff" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(1)} href="#new"><FaPaperPlane /> New Transaction</Link>
+          <Link className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 2 ? { color: "#ea580c", backgroundColor: "#ffedd5" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(2)} href="#pending"><FaRegClock /> Pending <div className="bg-[#ffedd5] text-[#ea580c] font-bold w-[25px] h-[25px] flex items-center justify-center rounded-[30px]">{myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length}</div></Link>
+          <Link className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 3 ? { color: "#16A34A", backgroundColor: "#DCFCE7" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(3)} href="#ready"><FaCheckCircle /> Ready to Execute <div className="bg-[#DCFCE7] text-[#16A34A] font-bold w-[25px] h-[25px] flex items-center justify-center rounded-[30px]">{myRequests.filter(item => item.status.toLowerCase() === "ready").length}</div></Link>
+          <Link className=" w-full flex justify-start py-3 px-5 rounded-[10px] items-center gap-2" style={tab === 4 ? { color: "#ea0c0c", backgroundColor: "#ffd5d5" } : { color: "#737070", backgroundColor: "transparent" }} onClick={() => setTab(4)} href="#executed"><FaCheckDouble /> Executed </Link>
         </div>
       </div>
       <div>
-        <div className="flex items-center justify-between py-4 px-12 border-b-[1px] border-gray-100">
+        <div className="flex items-center justify-between py-4 px-12 border-b-[1px] border-gray-100 gap-2">
           <div className="flex flex-col">
-            <h2 className="text-2xl font-bold tracking-wider mb-[5px]">Multi-Signature Wallet</h2>
-            <p className="text-gray-500">Manage your secure multi-sig wallet</p>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-wider mb-[5px] sm:block hidden">Multi-Signature Wallet</h2>
+            <p className="sm:text-base text-sm text-gray-500 sm:block hidden">Manage your secure multi-sig wallet</p>
+            <div className="border-b-[1px] border-gray-200 w-full p-4 py-[24px] sm:hidden block">
+              <Image src={Logo} className="w-[180px] mx-auto" />
+            </div>
           </div>
           <div>
             <ConnectButton />
           </div>
         </div>
-        <div className="bg-[#f7f7f7] flex p-8 flex-col gap-4 ">
-          {(deployedAccount || newAccountAddress) && <div className="shadow-md break-all bg-[rgba(255,255,255,1)] border-[1px] rounded-[1000px] flex items-center justify-start gap-3 w-fit overflow-hidden pr-5">
+        <div className="bg-[#f7f7f7] flex p-2 sm:p-8 flex-col gap-4 ">
+          {(deployedAccount || newAccountAddress) && <div id="wallet" className="shadow-md break-all bg-[rgba(255,255,255,1)] border-[1px] rounded-[1000px] flex items-center justify-start gap-3 w-fit overflow-hidden pr-5">
             <div className="bg-gradient-to-br from-[#9134EA] to-[#305EEB] text-white py-2 pl-5 pr-4 border-r-[1px]">
               <FaWallet />
             </div>
-            {deployedAccount || newAccountAddress}
+            <p className="text-xs sm:text-base">{deployedAccount || newAccountAddress}</p>
             <IoCopy className="text-[#305EEB] cursor-pointer" onClick={() => {
               copyTextToClipboard(deployedAccount || newAccountAddress)
               toast.dark("Copied to Clipboard..")
             }} />
           </div>}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div className="shadow-md flex flex-col bg-gradient-to-br from-[#9134EA] to-[#305EEB] p-5 rounded-[20px]">
               <div className="flex items-center justify-between w-full">
                 <div className="bg-[rgba(255,255,255,0.2)] h-[50px] w-[50px] rounded-2xl flex items-center justify-center">
@@ -812,7 +815,7 @@ export default function Hero() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
             <div className="flex flex-col gap-4 bg-white p-6 rounded-xl shadow-lg w-full border border-gray-100">
               <h2 className="text-xl font-bold text-gray-800">Create Multi-Sig Account</h2>
 
@@ -828,7 +831,7 @@ export default function Hero() {
                       className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                     />
                     {signerAddresses.length > 1 && (
-                      <button onClick={() => removeSignerField(index)} className="text-[#9333EA] ">
+                      <button onClick={() => removeSignerField(index)} className="text-[#355BEB] ">
                         <IoMdCloseCircleOutline size={24} />
                       </button>
                     )}
@@ -837,7 +840,7 @@ export default function Hero() {
 
                 <button
                   onClick={addSignerField}
-                  className="flex items-center gap-1 text-sm text-[#9333EA] font-medium hover:underline"
+                  className="flex items-center gap-1 text-sm text-[#355BEB] font-medium hover:underline"
                 >
                   <IoMdAddCircleOutline size={18} /> Add Signer
                 </button>
@@ -856,7 +859,7 @@ export default function Hero() {
               </div>
 
               <button
-                className="w-fit px-[30px] bg-[#9333EA] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-fit px-[30px] bg-[#355BEB] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
                 onClick={handleDeploy}
                 disabled={!isConnected || isLoading || !signerAddresses[0]}
               >
@@ -865,14 +868,14 @@ export default function Hero() {
 
             </div>
 
-            <div className="flex flex-col gap-4 bg-white p-6 rounded-xl shadow-lg w-full border border-gray-100">
+            <div className="flex flex-col gap-4 bg-white p-6 rounded-xl shadow-lg w-full border border-gray-100" id="new">
               <h2 className="text-xl font-bold text-gray-800">Create New Transaction</h2>
               <div className="w-full flex items-center justify-start border-b-[1px]">
                 <button
                   className="pb-[10px] px-[20px] flex items-center justify-center gap-2"
                   style={
                     value2 === "Transfer"
-                      ? { borderBottom: "2px solid #9333EA", color: "#9333EA" }
+                      ? { borderBottom: "2px solid #355BEB", color: "#355BEB" }
                       : undefined
                   }
                   onClick={() => setValue2("Transfer")}
@@ -885,7 +888,7 @@ export default function Hero() {
                   className="pb-[10px] px-[20px] flex items-center justify-center gap-2"
                   style={
                     value2 === "Approve"
-                      ? { borderBottom: "2px solid #9333EA", color: "#9333EA" }
+                      ? { borderBottom: "2px solid #355BEB", color: "#355BEB" }
                       : undefined
                   }
                   onClick={() => setValue2("Approve")}
@@ -898,7 +901,7 @@ export default function Hero() {
                   className="pb-[10px] px-[20px] flex items-center justify-center gap-2"
                   style={
                     value2 === "Custom"
-                      ? { borderBottom: "2px solid #9333EA", color: "#9333EA" }
+                      ? { borderBottom: "2px solid #355BEB", color: "#355BEB" }
                       : undefined
                   }
                   onClick={() => setValue2("Custom")}
@@ -913,15 +916,15 @@ export default function Hero() {
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-600 uppercase">Transaction Type</label>
                   <div className="grid grid-cols-3 gap-4">
-                    <button style={transferType === "eth" ? { borderColor: "#7E22CE", backgroundColor: "#FAF5FF", color: "#7E22CE" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
+                    <button style={transferType === "eth" ? { borderColor: "#355BEB", backgroundColor: "#FAF5FF", color: "#355BEB" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
                       setTransferType("eth");
                     }}><FaEthereum /> ETH</button>
-                    <button style={transferType === "erc20" ? { borderColor: "#7E22CE", backgroundColor: "#FAF5FF", color: "#7E22CE" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
+                    <button style={transferType === "erc20" ? { borderColor: "#355BEB", backgroundColor: "#FAF5FF", color: "#355BEB" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
                       setTransferType("erc20");
                       setValue("0");
                       setCallData("");
                     }}><FaCoins /> Token</button>
-                    <button style={transferType === "nft" ? { borderColor: "#7E22CE", backgroundColor: "#FAF5FF", color: "#7E22CE" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
+                    <button style={transferType === "nft" ? { borderColor: "#355BEB", backgroundColor: "#FAF5FF", color: "#355BEB" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
                       setTransferType("nft");
                       setValue("0");
                       setCallData("");
@@ -935,7 +938,7 @@ export default function Hero() {
                       type="text"
                       value={target}
                       onChange={(e) => setTarget(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
                       placeholder="0x..."
                     />
                   </div>
@@ -960,7 +963,7 @@ export default function Hero() {
                       type="text"
                       value={tokenReceiver}
                       onChange={(e) => setTokenReceiver(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
                       placeholder="0x..."
                     />
                   </div>}
@@ -971,7 +974,7 @@ export default function Hero() {
                       type="number"
                       value={tokenAmount}
                       onChange={(e) => setTokenAmount(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
                       placeholder="0x..."
                     />
                   </div>}
@@ -982,14 +985,14 @@ export default function Hero() {
                       type="number"
                       value={tokenId}
                       onChange={(e) => setTokenId(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
                       placeholder="0x..."
                     />
                   </div>}
                 </div>
 
                 <button
-                  className="w-fit px-[30px] bg-[#9333EA] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-fit px-[30px] bg-[#355BEB] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
                   onClick={() => handleRequest(deployedAccount || newAccountAddress, transferType)}
                   disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
                 >
@@ -1000,12 +1003,12 @@ export default function Hero() {
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-gray-600 uppercase">Transaction Type</label>
                   <div className="grid grid-cols-3 gap-4">
-                    <button style={approveType === "approve-erc20" ? { borderColor: "#7E22CE", backgroundColor: "#FAF5FF", color: "#7E22CE" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
+                    <button style={approveType === "approve-erc20" ? { borderColor: "#355BEB", backgroundColor: "#FAF5FF", color: "#355BEB" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
                       setApproveType("approve-erc20");
                       setValue("0");
                       setCallData("");
                     }}><FaCoins /> Token</button>
-                    <button style={approveType === "approve-nft" ? { borderColor: "#7E22CE", backgroundColor: "#FAF5FF", color: "#7E22CE" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
+                    <button style={approveType === "approve-nft" ? { borderColor: "#355BEB", backgroundColor: "#FAF5FF", color: "#355BEB" } : { borderColor: "#d1d5db", backgroundColor: "rgba(0, 0, 0, 0.01) " }} className="border-[2px] py-2 px-4 text-center rounded-xl flex items-center justify-center gap-2 font-bold" onClick={() => {
                       setApproveType("approve-nft");
                       setValue("0");
                       setCallData("");
@@ -1019,7 +1022,7 @@ export default function Hero() {
                       type="text"
                       value={target}
                       onChange={(e) => setTarget(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
                       placeholder="0x..."
                     />
                   </div>
@@ -1059,7 +1062,7 @@ export default function Hero() {
                 </div>
 
                 <button
-                  className="w-fit px-[30px] bg-[#9333EA] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-fit px-[30px] bg-[#355BEB] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
                   onClick={() => handleRequest(deployedAccount || newAccountAddress, approveType)}
                   disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
                 >
@@ -1074,7 +1077,7 @@ export default function Hero() {
                       type="text"
                       value={target}
                       onChange={(e) => setTarget(e.target.value)}
-                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none focus:ring-2 focus:ring-green-500"
+                      className="w-full border border-gray-300 rounded-md py-2 px-3 text-sm outline-none"
                       placeholder="0x..."
                     />
                   </div>
@@ -1102,7 +1105,7 @@ export default function Hero() {
                 </div>
 
                 <button
-                  className="w-fit px-[30px] bg-[#9333EA] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-fit px-[30px] bg-[#355BEB] text-white font-bold py-3 rounded-xl transition-colors shadow-md disabled:opacity-50 flex items-center justify-center gap-2"
                   onClick={() => handleRequest(deployedAccount || newAccountAddress)}
                   disabled={myRequests.some(item => item.account === (deployedAccount || newAccountAddress))}
                 >
@@ -1116,27 +1119,27 @@ export default function Hero() {
             <h2 className="text-xl font-bold">Wallet as Signer</h2>
             <p className="text-[rgba(0,0,0,0.5)] mt-[0.4rem] mb-[1rem]">Connected wallet signer roles</p>
             {signerFor?.map((acc, i) => (
-              <div className=" flex items-center justify-between gap-4 rounded-[15px] border-[1px] py-3 px-4 w-full bg-[#FAF5FF]">
+              <div className=" flex items-center justify-between gap-4 rounded-[15px] border-[1px] py-3 px-4 w-full bg-[rgba(169,183,232,0.3)]">
                 <div className="flex items-center justify-start gap-4 ">
-                  <div className="bg-gradient-to-br from-[#9134EA] to-[#305EEB] text-white w-[35px] h-[35px] flex items-center justify-center rounded-[10px]">
+                  <div className="bg-gradient-to-br from-[#9134EA] to-[#305EEB] text-white min-w-[35px] min-h-[35px] flex items-center justify-center rounded-[10px]">
                     <FaWallet></FaWallet>
                   </div>
-                  <p>{acc}</p>
+                  <p className="break-all sm:text-base text-xs">{acc}</p>
                 </div>
-                <div className="text-white py-1 px-3 rounded-[15px] bg-[#9333EA]">
+                <div className="text-white py-1 px-3 rounded-[15px] bg-[#355BEB]">
                   Active
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="grid grid-cols-3 gap-5">
-            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100 ">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100 " id="pending">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold  uppercase tracking-wider flex items-center justify-center text-base gap-2">
                   <FaClock className="text-orange-600" /> Pending
                 </h3>
-                <span className="bg-orange-100 text-orange-600 text-[10px] font-bold px-2 py-0.5 rounded-full text-lg">
+                <span className="bg-orange-100 text-orange-600 text-[12px] font-bold px-2 py-0.5 rounded-full text-lg">
                   {myRequests?.filter(item => item?.status?.toLowerCase() === "pending")?.length}
                 </span>
               </div>
@@ -1148,46 +1151,46 @@ export default function Hero() {
                     className="p-3 rounded-lg border transition-colors border-[#FED7AA] bg-[#FFF7ED]"
                   >
                     <div>
-                      <p className="bg-[#FFEDD5] text-[#C2410C] w-fit px-2 py-1 rounded-[5px] text-[10px] font-bold uppercase">{req?.reason}</p>
+                      <p className="bg-[#FFEDD5] text-[#C2410C] w-fit px-2 py-1 rounded-[5px] text-[12px] font-bold uppercase">{req?.reason}</p>
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 mb-1 mt-2">
                       <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#fadebe]">
-                        <p className="text-[9px] text-gray-400 font-bold">Smart Account</p>
-                        <p className="text-[10px] font-mono truncate">{req?.account}</p>
+                        <p className="text-[11px] text-gray-400 font-bold">Smart Account</p>
+                        <p className="text-[12px] font-mono break-all">{req?.account}</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 mb-1">
                       <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#fadebe]">
-                        <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                        <p className="text-[10px] font-mono truncate">{req?.targetAddress}</p>
+                        <p className="text-[11px] text-gray-400 font-bold">Target</p>
+                        <p className="text-[12px] font-mono break-all">{req?.targetAddress}</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 mb-1">
                       <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#fadebe]">
-                        <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                        <p className="text-[10px] font-mono">{req?.value}</p>
+                        <p className="text-[11px] text-gray-400 font-bold">Value</p>
+                        <p className="text-[12px] font-mono">{req?.value}</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-2 mb-2 ">
                       <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#fadebe]">
-                        <p className="text-[9px] text-gray-400 font-bold">Calldata</p>
-                        <p className="text-[10px] font-mono">{req?.data}</p>
+                        <p className="text-[11px] text-gray-400 font-bold">Calldata</p>
+                        <p className="text-[12px] font-mono">{req?.data}</p>
                       </div>
                     </div>
 
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-[9px] text-orange-600 font-semibold mt-1">
+                        <p className="text-[11px] text-orange-600 font-semibold mt-1">
                           Required: {req?.currentSignatures}/{req?.threshold} Signatures
                         </p>
                       </div>
 
                       <button
-                        className="bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
+                        className="bg-orange-600 hover:bg-orange-700 text-white text-[12px] font-bold py-1.5 px-3 rounded shadow-sm transition-all disabled:opacity-50"
                         onClick={() => {
                           handleSign(req.account, req.targetAddress, req.value, req.data, req.currentSignatures, req.threshold);
                         }}
@@ -1205,12 +1208,12 @@ export default function Hero() {
               </div>
             </div>
 
-            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100" id="ready">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-gray-500 uppercase tracking-wider flex items-center justify-start gap-2">
                   <FaCheckCircle className="text-green-600" /> Ready
                 </h3>
-                <span className="bg-green-200 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full text-lg">
+                <span className="bg-green-200 text-green-600 text-[12px] font-bold px-2 py-0.5 rounded-full text-lg">
                   {myRequests.filter(item => item.status.toLowerCase() === "ready").length}
                 </span>
               </div>
@@ -1222,46 +1225,46 @@ export default function Hero() {
                   className="p-3 rounded-lg border transition-colors border-[#BBF7D0] bg-[#F0FDF4]"
                 >
                   <div>
-                    <p className="bg-[#DCFCE7] text-green-600 w-fit px-2 py-1 rounded-[5px] text-[10px] font-bold uppercase">{req?.reason}</p>
+                    <p className="bg-[#DCFCE7] text-green-600 w-fit px-2 py-1 rounded-[5px] text-[12px] font-bold uppercase">{req?.reason}</p>
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 mb-1 mt-2">
                     <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
-                      <p className="text-[9px] text-gray-400 font-bold">Smart Account</p>
-                      <p className="text-[10px] font-mono truncate">{req?.account}</p>
+                      <p className="text-[11px] text-gray-400 font-bold">Smart Account</p>
+                      <p className="text-[12px] font-mono break-all">{req?.account}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 mb-1">
                     <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
-                      <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                      <p className="text-[10px] font-mono truncate">{req?.targetAddress}</p>
+                      <p className="text-[11px] text-gray-400 font-bold">Target</p>
+                      <p className="text-[12px] font-mono break-all">{req?.targetAddress}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 mb-1">
                     <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
-                      <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                      <p className="text-[10px] font-mono">{req?.value}</p>
+                      <p className="text-[11px] text-gray-400 font-bold">Value</p>
+                      <p className="text-[12px] font-mono">{req?.value}</p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 gap-2 mb-2 ">
                     <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
-                      <p className="text-[9px] text-gray-400 font-bold">Calldata</p>
-                      <p className="text-[10px] font-mono">{req?.data}</p>
+                      <p className="text-[11px] text-gray-400 font-bold">Calldata</p>
+                      <p className="text-[12px] font-mono">{req?.data}</p>
                     </div>
                   </div>
 
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-[9px] text-green-600 font-semibold mt-1">
+                      <p className="text-[11px] text-green-600 font-semibold mt-1">
                         Required: {req?.currentSignatures}/{req?.threshold} Signatures
                       </p>
                     </div>
 
                     <button
-                        className="bg-green-600 hover:bg-green-700 text-white text-[10px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
+                        className="bg-green-600 hover:bg-green-700 text-white text-[12px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
                         onClick={() => {
                           handleExecute(req)
                         }}
@@ -1275,7 +1278,7 @@ export default function Hero() {
               </div>
             </div>
 
-            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100">
+            <div className="w-full bg-white p-4 rounded-xl shadow-lg border border-gray-100" id="executed">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-gray-500 uppercase tracking-wider flex items-center justify-start gap-2">
                   <FaCheckCircle className="text-blue-600" /> Executed
@@ -1294,29 +1297,29 @@ export default function Hero() {
                     >
                       <div className="grid grid-cols-1 gap-2 mb-1 mt-2">
                         <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-blue-100">
-                          <p className="text-[9px] text-gray-400 font-bold">Smart Account</p>
-                          <p className="text-[10px] font-mono truncate">{account}</p>
+                          <p className="text-[11px] text-gray-400 font-bold">Smart Account</p>
+                          <p className="text-[12px] font-mono break-all">{account}</p>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 gap-2 mb-1">
                         <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-blue-100">
-                          <p className="text-[9px] text-gray-400 font-bold">Target</p>
-                          <p className="text-[10px] font-mono truncate">{tx?.targetAddress}</p>
+                          <p className="text-[11px] text-gray-400 font-bold">Target</p>
+                          <p className="text-[12px] font-mono break-all">{tx?.targetAddress}</p>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 gap-2 mb-1">
                         <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-blue-100">
-                          <p className="text-[9px] text-gray-400 font-bold">Value</p>
-                          <p className="text-[10px] font-mono">{tx?.value}</p>
+                          <p className="text-[11px] text-gray-400 font-bold">Value</p>
+                          <p className="text-[12px] font-mono">{tx?.value}</p>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 gap-2 mb-2 ">
                         <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-blue-100">
-                          <p className="text-[9px] text-gray-400 font-bold">Calldata</p>
-                          <p className="text-[10px] font-mono">{tx?.data}</p>
+                          <p className="text-[11px] text-gray-400 font-bold">Calldata</p>
+                          <p className="text-[12px] font-mono">{tx?.data}</p>
                         </div>
                       </div>
                     </div>

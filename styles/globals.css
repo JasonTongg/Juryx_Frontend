@@ -44,3 +44,13 @@ img {
 .MuiList-padding {
   padding: 0 !important;
 }
+
+.grid-style {
+  grid-template-columns: 270px 1fr;
+}
+
+@media only screen and (max-width: 1024px) {
+  .grid-style {
+    grid-template-columns: 1fr;
+  }
+}
