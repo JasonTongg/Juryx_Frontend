@@ -186,8 +186,6 @@ export default function Hero() {
             args: [validSigners, BigInt(threshold), ENTRY_POINT_ADDRESS],
           });
         } catch (error) {
-          console.log("create account")
-          console.log(error)
           setIsLoading(false);
           const message =
             error?.shortMessage ||
@@ -227,7 +225,6 @@ export default function Hero() {
         args: [],
       });
     } catch (error) {
-      console.log(message)
       const message =
         error?.shortMessage ||
         error?.message ||
@@ -563,8 +560,6 @@ export default function Hero() {
 
       userOp.signature = encodedSignatures;
 
-      console.log(userOp);
-
       handleFinalExecution(userOp, req);
 
     } catch (err) {
@@ -596,15 +591,9 @@ export default function Hero() {
         ],
       });
 
-      console.log("Transaction Hash:", txHash);
-
       const receipt = await publicClient.waitForTransactionReceipt({
         hash: txHash
       });
-
-      console.log("Transaction confirmed in block:", receipt.blockNumber);
-
-      console.log("Receipt:", receipt);
 
       if (receipt.status === "success") {
         await updateStatus(req.account, "Executed");
@@ -638,7 +627,6 @@ export default function Hero() {
     amount,
   ) {
 
-    console.log(tokenAddress, to, amount);
     const decimals = await publicClient.readContract({
       address: getAddress(tokenAddress),
       abi: ERC20_TRANSFER_ABI,
