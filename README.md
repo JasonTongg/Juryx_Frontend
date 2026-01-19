@@ -1,4 +1,4 @@
-<img width="1050" height="718" alt="image" src="https://github.com/user-attachments/assets/ebd5e929-4cbe-4aea-87b1-5ab731e8b725" />
+<img width="1290" height="722" alt="image" src="https://github.com/user-attachments/assets/3079696e-dddd-4fc3-b75c-616e7a6b7632" />
 
 # Juryx | Multi-Signature Wallet
 
@@ -11,6 +11,7 @@ Juryx is a secure, decentralized multi-signature wallet platform that allows tea
 The completed system allows users to:
 
 * **Multi-Sig Account Creation:** Deploy new smart contract wallets with customizable signer lists and required confirmation thresholds (e.g., 2-of-3 signatures).
+* **Wallet Gas Balance:** Manage ETH deposits within the EntryPoint contract to ensure your Smart Account is pre-funded and capable of paying its own gas fees independently.
 * **Transaction Management:** Create, sign, and execute various transaction types including ETH transfers, Token approvals, and custom contract interactions.
 * **Dashboard Overview:** Real-time visualization of wallet balances (ETH), pending transactions requiring your signature, and your active roles as a signer.
 * **Transaction Queue:** Categorized views for transactions that are Pending (awaiting signatures), Ready to Execute (threshold met), and Executed (history).
