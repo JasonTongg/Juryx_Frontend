@@ -215,6 +215,7 @@ export default function Hero() {
     if (!address || !factoryByteCode) return;
     if (deployedAccount || newAccountAddress) {
       toast.error("Account already deployed");
+      return;
     }
     setIsLoading(true);
     accountCreatedRef.current = false;
