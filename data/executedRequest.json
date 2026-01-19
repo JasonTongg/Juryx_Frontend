@@ -229,6 +229,18 @@
       "approvedBy": [],
       "createdAt": "2026-01-14T02:58:14.542Z",
       "executedAt": "2026-01-14T02:58:41.100Z"
+    },
+    {
+      "targetAddress": "0xD38F2E53114CB54670daB5205C012B0B511240a0",
+      "value": "0.1",
+      "data": "0x",
+      "reason": "ETH Transfer",
+      "note": "ETH Transfer Request",
+      "status": "Executed",
+      "threshold": 1,
+      "approvedBy": [],
+      "createdAt": "2026-01-19T03:02:44.116Z",
+      "executedAt": "2026-01-19T03:31:50.616Z"
     }
   ],
   "0xAd00F3247C005446A5bD6919E247872b25A7b2Ea": [

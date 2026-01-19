@@ -5,12 +5,13 @@ import {
   useAccount,
   useBalance,
   useWriteContract,
+  useReadContract,
   useWaitForTransactionReceipt,
   useDeployContract,
   useSignMessage
 } from "wagmi";
 import { useSelector } from "react-redux";
-import { parseEventLogs, encodeAbiParameters, parseAbiParameters, encodeFunctionData, keccak256, erc20Abi } from "viem";
+import { parseEventLogs, encodeAbiParameters, parseAbiParameters, encodeFunctionData, keccak256, erc20Abi, formatEther } from "viem";
 import { IoMdCloseCircleOutline, IoMdAddCircleOutline } from "react-icons/io";
 import { encode } from "punycode";
 import { createPublicClient, http, toHex } from "viem";
@@ -96,7 +97,7 @@ export default function Hero() {
   const { address, isConnected } = useAccount();
   const { abi, factoryByteCode } = useSelector((state) => state.data);
   const { signMessageAsync } = useSignMessage();
-  
+
   // State for dynamic signers and threshold
   const [signerAddresses, setSignerAddresses] = useState([""]);
   const [threshold, setThreshold] = useState(1);
@@ -212,7 +213,7 @@ export default function Hero() {
   /* ---------------- Handlers ---------------- */
   const handleDeploy = async () => {
     if (!address || !factoryByteCode) return;
-    if(deployedAccount || newAccountAddress) {
+    if (deployedAccount || newAccountAddress) {
       toast.dark("Account already deployed");
     }
     setIsLoading(true);
@@ -539,8 +540,8 @@ export default function Hero() {
             req.data
           ],
         }),
-        paymasterAndData: "0x0A61DEfe814e78eB8eB95aFb4d18Ab24Ae85E443",
-        signature: "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa55555555555555555555555555555555555555555555555555555555555555551b",
+        paymasterAndData: "0x",
+        signature: "0x",
       };
 
       userOp.verificationGasLimit = toHex(1500000n);
@@ -627,6 +628,7 @@ export default function Hero() {
     } finally {
       setIsLoading(false);
       setIsLoadingExecute(false);
+      refetchBalance();
     }
   };
 
@@ -732,8 +734,51 @@ export default function Hero() {
       }
     });
   }
-  
-  const { data: balance } = useBalance({address: deployedAccount || newAccountAddress});
+
+  const { data: balance } = useBalance({ address: deployedAccount || newAccountAddress });
+
+  /* ---------------- Gas Deposit ---------------- */
+  const { writeContractAsync: writeDeposit } = useWriteContract();
+
+  const depositToEntryPoint = async () => {
+    const accountToFund = deployedAccount || newAccountAddress;
+
+    if (!accountToFund) {
+      toast.dark("No Smart Account found to fund");
+      return;
+    }
+
+    try {
+      toast.dark("Depositing gas to EntryPoint...");
+
+      const txHash = await writeDeposit({
+        address: ENTRY_POINT_ADDRESS,
+        abi: abi.EntryPointAbi,
+        functionName: "depositTo",
+        args: [accountToFund],
+        value: parseEther("0.1"), // You can make this dynamic if needed
+      });
+
+      await publicClient.waitForTransactionReceipt({ hash: txHash });
+      toast.dark("Gas deposit successful!");
+
+      // Refresh balance after deposit
+      refetchBalance();
+    } catch (err) {
+      console.error("Deposit failed", err);
+      toast.dark(err?.shortMessage || "Deposit failed");
+    }
+  };
+
+  const { data: entryPointDeposit, refetch: refetchBalance } = useReadContract({
+    address: ENTRY_POINT_ADDRESS,
+    abi: abi.EntryPointAbi,
+    functionName: "balanceOf",
+    args: [deployedAccount || newAccountAddress],
+    query: {
+      enabled: !!(deployedAccount || newAccountAddress),
+    }
+  });
 
   return (
     <div className="w-full grid grid-style" style={{ minHeight: "calc(100vh - 110px)" }}>
@@ -773,7 +818,7 @@ export default function Hero() {
               toast.dark("Copied to Clipboard..")
             }} />
           </div>}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <div className="shadow-md flex flex-col bg-gradient-to-br from-[#9134EA] to-[#305EEB] p-5 rounded-[20px]">
               <div className="flex items-center justify-between w-full">
                 <div className="bg-[rgba(255,255,255,0.2)] h-[50px] w-[50px] rounded-2xl flex items-center justify-center">
@@ -784,8 +829,26 @@ export default function Hero() {
                 </p>
               </div>
               <p className="text-[rgba(255,255,255,0.7)] mt-[1rem]">Wallet Balance</p>
-              <h2 className="text-[rgba(255,255,255,1)] font-bold text-3xl my-[0.2rem]">{balance?.formatted} ETH</h2>
-              <p className="text-[rgba(255,255,255,0.7)]">=$4.300.000 USD</p>
+              <h2 className="text-[rgba(255,255,255,1)] font-bold text-3xl my-[0.2rem] break-all">{balance?.formatted || 0} ETH</h2>
+            </div>
+            <div className="shadow-md flex flex-col bg-gradient-to-br from-[#9134EA] to-[#305EEB] p-5 rounded-[20px]">
+              <div className="flex items-center justify-between w-full">
+                <div className="bg-[rgba(255,255,255,0.2)] h-[50px] w-[50px] rounded-2xl flex items-center justify-center">
+                  <PiPiggyBankFill className="text-white text-3xl" />
+                </div>
+                <p className="bg-[rgba(255,255,255,0.2)] text-white py-1 px-5 rounded-[10px] w-fit font-bold">
+                  Active
+                </p>
+              </div>
+              <p className="text-[rgba(255,255,255,0.7)] mt-[1rem]">Wallet Gas Balance</p>
+              <h2 className="text-[rgba(255,255,255,1)] font-bold text-3xl my-[0.2rem] break-all">{formatEther(entryPointDeposit) || "0"} ETH</h2>
+              <button
+                className="mt-2 bg-white text-[#305EEB] font-bold py-1 px-4 rounded-lg hover:bg-gray-100 transition-colors text-sm"
+                onClick={depositToEntryPoint}
+                disabled={!isConnected || (!deployedAccount && !newAccountAddress)}
+              >
+                Deposit 0.1 ETH
+              </button>
             </div>
             <div className="shadow-md flex flex-col bg-white p-5 rounded-[20px] border-[1px] border-gray-200">
               <div className="flex items-center justify-between w-full">
@@ -1221,49 +1284,49 @@ export default function Hero() {
               <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
                 {myRequests.filter(item => item.status.toLowerCase() === "ready")?.map((req, i) => (
                   <div
-                  key={i}
-                  className="p-3 rounded-lg border transition-colors border-[#BBF7D0] bg-[#F0FDF4]"
-                >
-                  <div>
-                    <p className="bg-[#DCFCE7] text-green-600 w-fit px-2 py-1 rounded-[5px] text-[12px] font-bold uppercase">{req?.reason}</p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2 mb-1 mt-2">
-                    <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
-                      <p className="text-[11px] text-gray-400 font-bold">Smart Account</p>
-                      <p className="text-[12px] font-mono break-all">{req?.account}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2 mb-1">
-                    <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
-                      <p className="text-[11px] text-gray-400 font-bold">Target</p>
-                      <p className="text-[12px] font-mono break-all">{req?.targetAddress}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2 mb-1">
-                    <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
-                      <p className="text-[11px] text-gray-400 font-bold">Value</p>
-                      <p className="text-[12px] font-mono">{req?.value}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2 mb-2 ">
-                    <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
-                      <p className="text-[11px] text-gray-400 font-bold">Calldata</p>
-                      <p className="text-[12px] font-mono">{req?.data}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-between items-center">
+                    key={i}
+                    className="p-3 rounded-lg border transition-colors border-[#BBF7D0] bg-[#F0FDF4]"
+                  >
                     <div>
-                      <p className="text-[11px] text-green-600 font-semibold mt-1">
-                        Required: {req?.currentSignatures}/{req?.threshold} Signatures
-                      </p>
+                      <p className="bg-[#DCFCE7] text-green-600 w-fit px-2 py-1 rounded-[5px] text-[12px] font-bold uppercase">{req?.reason}</p>
                     </div>
 
-                    <button
+                    <div className="grid grid-cols-1 gap-2 mb-1 mt-2">
+                      <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
+                        <p className="text-[11px] text-gray-400 font-bold">Smart Account</p>
+                        <p className="text-[12px] font-mono break-all">{req?.account}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 mb-1">
+                      <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
+                        <p className="text-[11px] text-gray-400 font-bold">Target</p>
+                        <p className="text-[12px] font-mono break-all">{req?.targetAddress}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 mb-1">
+                      <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
+                        <p className="text-[11px] text-gray-400 font-bold">Value</p>
+                        <p className="text-[12px] font-mono">{req?.value}</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-2 mb-2 ">
+                      <div className="bg-[rgba(255,255,255,.3)] p-2 rounded border border-[#c4f5d5]">
+                        <p className="text-[11px] text-gray-400 font-bold">Calldata</p>
+                        <p className="text-[12px] font-mono">{req?.data}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-[11px] text-green-600 font-semibold mt-1">
+                          Required: {req?.currentSignatures}/{req?.threshold} Signatures
+                        </p>
+                      </div>
+
+                      <button
                         className="bg-green-600 hover:bg-green-700 text-white text-[12px] font-bold py-1.5 px-3 rounded shadow-sm transition-all"
                         onClick={() => {
                           handleExecute(req)
@@ -1271,8 +1334,8 @@ export default function Hero() {
                       >
                         {isLoadingExecute ? "Executing..." : "Execute"}
                       </button>
+                    </div>
                   </div>
-                </div>
                 ))}
 
               </div>
@@ -1283,7 +1346,6 @@ export default function Hero() {
                 <h3 className="font-bold text-gray-500 uppercase tracking-wider flex items-center justify-start gap-2">
                   <FaCheckCircle className="text-blue-600" /> Executed
                 </h3>
-                <p className="text-blue-600">View All</p>
               </div>
 
               <div className="flex flex-col gap-3 max-h-[400px] overflow-y-auto">
