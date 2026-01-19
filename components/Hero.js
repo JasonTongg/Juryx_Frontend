@@ -156,6 +156,8 @@ export default function Hero() {
     const data = await response.json();
     if (data.success) {
       setExecutedHistory(data.history);
+    } else {
+      toast.error(data.error)
     }
   };
 
@@ -192,7 +194,7 @@ export default function Hero() {
             error?.message ||
             "Unknown error";
 
-          toast.dark(message);
+          toast.error(message);
         }
       }
     }
@@ -204,7 +206,7 @@ export default function Hero() {
     if (createReceipt) {
       setIsLoading(false);
       setUserApi();
-      toast.dark("Account successfully created...");
+      toast.success("Account successfully created...");
     }
   }, [createReceipt]);
 
@@ -212,13 +214,13 @@ export default function Hero() {
   const handleDeploy = async () => {
     if (!address || !factoryByteCode) return;
     if (deployedAccount || newAccountAddress) {
-      toast.dark("Account already deployed");
+      toast.error("Account already deployed");
     }
     setIsLoading(true);
     accountCreatedRef.current = false;
 
     try {
-      toast.dark("Creating Account...");
+      toast.info("Creating Account...");
       await deployFactory({
         abi: abi.AccountFactoryAbi,
         bytecode: factoryByteCode,
@@ -230,30 +232,10 @@ export default function Hero() {
         error?.message ||
         "Unknown error";
 
-      toast.dark(message);
+      toast.error(message);
       setIsLoading(false);
     }
   };
-
-  // --- New Execute Handler ---
-  // const handleExecute = async () => {
-  //   const accountToUse = deployedAccount || newAccountAddress;
-  //   if (!accountToUse) return;
-
-  //   setIsExecuting(true);
-  //   try {
-  //     await executeTx({
-  //       address: accountToUse,
-  //       abi: abi.AccountAbi,
-  //       functionName: "execute",
-  //       args: [target, BigInt(value), callData],
-  //     });
-  //   } catch (err) {
-  //     console.error("Execution failed", err);
-  //   } finally {
-  //     setIsExecuting(false);
-  //   }
-  // };
 
   const handleRequest = async (accountAddress, type) => {
     if (myRequests.some(item => item.account === (deployedAccount || newAccountAddress))) return;
@@ -346,10 +328,9 @@ export default function Hero() {
       loadRequests(address);
       loadHistory(address);
     } catch (error) {
-      console.error("Error submitting request:", error);
-      toast.dark("Error submitting request");
+      toast.error("Error submitting request");
     } finally {
-      toast.dark("Transaction request submitted");
+      toast.success("Transaction request submitted");
       setTarget("");
       setValue("");
       setCallData("");
@@ -433,7 +414,7 @@ export default function Hero() {
         setSignerFor(result.ownerOf);
       }
     } catch (error) {
-      console.error("Fetch error:", error);
+      toast.error("Fetch User error");
     }
   };
 
@@ -446,7 +427,7 @@ export default function Hero() {
   const handleSign = async (accountAddress, target, value, data, currentSignatures, threshold) => {
     try {
       setIsLoadingSign(true);
-      toast.dark("Signing Message...");
+      toast.info("Signing Message...");
       const plainString = "Hello Multisig";
       const messageHash = keccak256(toHex(plainString));
 
@@ -454,7 +435,7 @@ export default function Hero() {
         message: { raw: messageHash }
       });
 
-      toast.dark("Message signed successfully!");
+      toast.success("Message signed successfully!");
 
       await fetch("/api/addSignature", {
         method: "POST",
@@ -478,7 +459,7 @@ export default function Hero() {
         err?.message ||
         "Unknown error";
 
-      toast.dark(message);
+      toast.error(message);
       setIsLoadingSign(false);
     }
   };
@@ -496,10 +477,10 @@ export default function Hero() {
 
       const data = await response.json();
       if (data.success) {
-        toast.dark(`Status updated to ${status}`);
+        toast.info(`Status updated to ${status}`);
       }
     } catch (error) {
-      console.error("Failed to update status", error);
+      toast.error("Failed to update status", error);
     }
   };
 
@@ -513,14 +494,14 @@ export default function Hero() {
       });
       return toHex(nonce);
     } catch (error) {
-      console.error("Error fetching nonce:", error);
+      toast.error("Error fetching nonce");
     }
   };
 
   const handleExecute = async (req) => {
     setIsLoading(true);
     try {
-      toast.dark("Executing Transaction...");
+      toast.info("Executing Transaction...");
 
       const hexNonce = (await getHexNonce(req.account)).toString(16);
 
@@ -568,7 +549,7 @@ export default function Hero() {
         err?.message ||
         "Unknown error";
 
-      toast.dark(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
 
@@ -603,9 +584,9 @@ export default function Hero() {
           loadHistory(address)
         ]);
 
-        toast.dark("Transaction Executed Successfully!");
+        toast.success("Transaction Executed Successfully!");
       } else {
-        throw new Error("Transaction reverted on-chain");
+        toast.error("Transaction reverted on-chain");
       }
     } catch (err) {
       const message =
@@ -613,7 +594,7 @@ export default function Hero() {
         err?.message ||
         "Unknown error";
 
-      toast.dark(message);
+      toast.error(message);
     } finally {
       setIsLoading(false);
       setIsLoadingExecute(false);
@@ -732,12 +713,12 @@ export default function Hero() {
     const accountToFund = deployedAccount || newAccountAddress;
 
     if (!accountToFund) {
-      toast.dark("No Smart Account found to fund");
+      toast.error("No Smart Account found to fund");
       return;
     }
 
     try {
-      toast.dark("Depositing gas to EntryPoint...");
+      toast.info("Depositing gas to EntryPoint...");
 
       const txHash = await writeDeposit({
         address: ENTRY_POINT_ADDRESS,
@@ -748,13 +729,13 @@ export default function Hero() {
       });
 
       await publicClient.waitForTransactionReceipt({ hash: txHash });
-      toast.dark("Gas deposit successful!");
+      toast.success("Gas deposit successful!");
 
       // Refresh balance after deposit
       refetchBalance();
     } catch (err) {
-      console.error("Deposit failed", err);
-      toast.dark(err?.shortMessage || "Deposit failed");
+      toast.error("Deposit failed");
+      toast.error(err?.shortMessage || "Deposit failed");
     }
   };
 
@@ -803,7 +784,7 @@ export default function Hero() {
             <p className="text-xs sm:text-base">{deployedAccount || newAccountAddress}</p>
             <IoCopy className="text-[#305EEB] cursor-pointer" onClick={() => {
               copyTextToClipboard(deployedAccount || newAccountAddress)
-              toast.dark("Copied to Clipboard..")
+              toast.success("Copied to Clipboard..")
             }} />
           </div>}
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

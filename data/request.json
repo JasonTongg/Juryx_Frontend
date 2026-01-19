@@ -1,1 +1,13 @@
-{}
+{
+  "0xC85Bf8473215b7ed770E788fCD2c4c505299f736": {
+    "targetAddress": "0xD38F2E53114CB54670daB5205C012B0B511240a0",
+    "value": "0.01",
+    "data": "0x",
+    "reason": "ETH Transfer",
+    "note": "ETH Transfer Request",
+    "status": "pending",
+    "threshold": 1,
+    "approvedBy": [],
+    "createdAt": "2026-01-19T04:32:27.018Z"
+  }
+}

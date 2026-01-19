@@ -1,1 +1,9 @@
-{}
+{
+  "0xD38F2E53114CB54670daB5205C012B0B511240a0": {
+    "factory": "0x2C7c9aCD403E429a20417ab493cb092C2b3df3e7",
+    "ownerOf": [
+      "0xa1C34C8D51FE033130a7b643975086e81028Daa8"
+    ],
+    "deployedAccounts": "0xa1C34C8D51FE033130a7b643975086e81028Daa8"
+  }
+}
