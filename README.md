@@ -1,37 +1,41 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+<img width="1050" height="718" alt="image" src="https://github.com/user-attachments/assets/ebd5e929-4cbe-4aea-87b1-5ab731e8b725" />
 
-## Getting Started
+# Juryx | Multi-Signature Wallet
 
-First, run the development server:
+Juryx is a secure, decentralized multi-signature wallet platform that allows teams and individuals to manage digital assets with collective authorization. By requiring multiple approvals for transactions, Juryx eliminates single points of failure and enhances the security of on-chain funds.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Smart Contract using Hardhat:** [JURYX](https://github.com/JasonTongg/Juryx)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features & Functionality
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+The completed system allows users to:
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+* **Multi-Sig Account Creation:** Deploy new smart contract wallets with customizable signer lists and required confirmation thresholds (e.g., 2-of-3 signatures).
+* **Transaction Management:** Create, sign, and execute various transaction types including ETH transfers, Token approvals, and custom contract interactions.
+* **Dashboard Overview:** Real-time visualization of wallet balances (ETH), pending transactions requiring your signature, and your active roles as a signer.
+* **Transaction Queue:** Categorized views for transactions that are Pending (awaiting signatures), Ready to Execute (threshold met), and Executed (history).
+* **Dynamic UI:** A clean, responsive interface built for both desktop and mobile web3 browsers.
 
-## Learn More
+## Technical Stack
 
-To learn more about Next.js, take a look at the following resources:
+* **Frontend:** Next.js (React).
+* **Styling:** Tailwind CSS (Modular components & custom layouts).
+* **Blockchain Interaction:** Viem & Wagmi (Optimized for Sepolia/Mainnet RPCs) and Rainbowkit as Wallet Connect.
+* **State Management:** Store-based architecture for managing wallet connections and transaction status.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Core Functionality
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+### Account Setup
+Users can define multiple **Signer Addresses** and set a **Required Threshold**. This logic interfaces with a **Factory Contract** to deploy a unique multi-sig instance on-chain.
 
-## Deploy on Vercel
+### Signing Workflow
+* **Initiate**: Any signer can propose a new transaction.
+* **Approve**: Other signers view the transaction in their "Pending" tab and can select "Sign & Approve."
+* **Execute**: Once the threshold is met, the transaction moves to the "Ready" state and can be broadcast to the network.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Author  
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
-# Juryx_Frontend
+**Jason Tong**  
+
+- **GitHub:** [JasonTongg](https://github.com/JasonTongg).
+- **Linkedin:** [Jason Tong](https://www.linkedin.com/in/jason-tong-42600319a/).
