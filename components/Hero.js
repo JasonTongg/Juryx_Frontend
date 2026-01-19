@@ -829,7 +829,7 @@ export default function Hero() {
                 </p>
               </div>
               <p className="text-[rgba(255,255,255,0.7)] mt-[1rem]">Wallet Gas Balance</p>
-              <h2 className="text-[rgba(255,255,255,1)] font-bold text-3xl my-[0.2rem] break-all">{formatEther(entryPointDeposit || "0x")} ETH</h2>
+              <h2 className="text-[rgba(255,255,255,1)] font-bold text-3xl my-[0.2rem] break-all">{formatEther(entryPointDeposit || "0")} ETH</h2>
               <button
                 className="mt-2 bg-white text-[#305EEB] font-bold py-1 px-4 rounded-lg hover:bg-gray-100 transition-colors text-sm"
                 onClick={depositToEntryPoint}
